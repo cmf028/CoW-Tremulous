@@ -222,7 +222,7 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
                 self->botDest.ent = self->botTarget;
                 VectorCopy(self->botTarget->s.pos.trBase, self->botDest.coord);
                 findRouteToTarget(self, self->botDest.coord);
-                followNewRouteToTarget(self);
+                setNewRoute(self);
             }
             
             //have reached end of path, continue towards arm until reached
@@ -232,7 +232,7 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
                 //find and follow a new path if we get stuck
                 if(self->timeFoundNode + 10000 < level.time) {
                     findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
-                    followNewRouteToTarget(self);
+                    setNewRoute(self);
                 }
             }
             if(botGetDistanceBetweenPlayer(self,self->botTarget) > 100) {

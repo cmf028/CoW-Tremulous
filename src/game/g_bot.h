@@ -57,7 +57,7 @@ int findClosestNode( vec3_t start );
 void targetObjective( gentity_t *self, usercmd_t *botCmdBuffer);
 void botGetAimLocation( gentity_t *target, vec3_t *aimLocation);
 void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer);
-void followNewRouteToTarget(gentity_t *self);
+void setNewRoute(gentity_t *self);
 int botFindBuilding(gentity_t *self, int buildingType, int range);
 void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec );
 qboolean G_BotCheckForSpawningPlayers( gentity_t *self );

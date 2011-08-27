@@ -437,7 +437,7 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
                 self->botDest.ent = self->botEnemy;
                 VectorCopy(self->botEnemy->s.pos.trBase, self->botDest.coord);
                 findRouteToTarget(self, self->botDest.coord);
-                followNewRouteToTarget(self);
+                setNewRoute(self);
                 //trap_SendServerCommand(-1,va("print \"New Target Node %d\n\"", self->targetNode));
             }
              
@@ -566,7 +566,7 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
             self->botDest.ent = self->botTarget;
             VectorCopy(self->botTarget->s.pos.trBase, self->botDest.coord);
             findRouteToTarget(self, self->botDest.coord);
-            followNewRouteToTarget(self);
+            setNewRoute(self);
         }
                 
         //have reached end of path, continue towards buildable from here
@@ -575,7 +575,7 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
             //in case we get stuck, find a new route to the target and follow it
             if(self->timeFoundNode + 10000 < level.time) {
                 findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
-                followNewRouteToTarget(self);
+                setNewRoute(self);
             }
         }
         if( botGetDistanceBetweenPlayer( self, self->botTarget ) <
@@ -596,7 +596,7 @@ void Heal( gentity_t *self, usercmd_t *botCmdBuffer) {
             self->botDest.ent = self->botTarget;
             VectorCopy(self->botTarget->s.pos.trBase, self->botDest.coord);
             findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
-            followNewRouteToTarget(self);
+            setNewRoute(self);
     }
             
     //have reached end of path, continue towards medi until reached
@@ -605,7 +605,7 @@ void Heal( gentity_t *self, usercmd_t *botCmdBuffer) {
         //in case we get stuck, find a new route to the target and follow it
         if(self->timeFoundNode + 10000 < level.time) {
             findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
-            followNewRouteToTarget(self);
+            setNewRoute(self);
         }
     }
      if(botGetDistanceBetweenPlayer(self,self->botTarget) > 50) {
@@ -786,7 +786,7 @@ void botGetAimLocation( gentity_t *target, vec3_t *aimLocation) {
 
 void botAimAtTarget( gentity_t *self, vec3_t target, usercmd_t *rAngles)
 {
-vec3_t aimVec, oldAimVec, aimAngles;
+        vec3_t aimVec, oldAimVec, aimAngles;
         vec3_t refNormal, grapplePoint, xNormal, viewBase;
         //vec3_t highPoint;
         float turnAngle;
@@ -1437,7 +1437,7 @@ void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     
     
 }
-void followNewRouteToTarget(gentity_t *self) { 
+void setNewRoute(gentity_t *self) { 
     //findRouteToTarget(self, self->botDest.coord);
     self->timeFoundNode = level.time;
     self->lastNodeID = self->targetNode;
