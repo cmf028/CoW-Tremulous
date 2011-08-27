@@ -856,7 +856,7 @@ void G_PathLoad( void )
         char *path;
         char line[ MAX_STRING_CHARS ];
         char map[ MAX_QPATH ];
-        level.numPaths = 0;
+        level.numNodes = 0;
         trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
         for(i = 0; i < MAX_NODES;i++)
         {
@@ -895,22 +895,22 @@ void G_PathLoad( void )
                 if( *path == '\n' )
                 {
                         i = 0; 
-                        if( level.numPaths >= MAX_NODES ){G_Printf( "Reached path limit\n" );return;}
+                        if( level.numNodes >= MAX_NODES ){G_Printf( "Reached path limit\n" );return;}
                         sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d\n", 
-                                                &level.numPaths,
-                                                &level.nodes[level.numPaths].coord[0], 
-                                                &level.nodes[level.numPaths].coord[1], 
-                                                &level.nodes[level.numPaths].coord[2],
-                                                &level.nodes[level.numPaths].nextid[0],
-                                                &level.nodes[level.numPaths].nextid[1],
-                                                &level.nodes[level.numPaths].nextid[2],
-                                                &level.nodes[level.numPaths].nextid[3],
-                                                &level.nodes[level.numPaths].nextid[4],
-                                                &level.nodes[level.numPaths].random,
-                                                &level.nodes[level.numPaths].timeout,
-                                                &level.nodes[level.numPaths].action ); 
-                        if(level.nodes[level.numPaths].timeout <= 0){level.nodes[level.numPaths].timeout = 10000;}
-                        level.numPaths ++;
+                                                &level.numNodes,
+                                                &level.nodes[level.numNodes].coord[0], 
+                                                &level.nodes[level.numNodes].coord[1], 
+                                                &level.nodes[level.numNodes].coord[2],
+                                                &level.nodes[level.numNodes].nextid[0],
+                                                &level.nodes[level.numNodes].nextid[1],
+                                                &level.nodes[level.numNodes].nextid[2],
+                                                &level.nodes[level.numNodes].nextid[3],
+                                                &level.nodes[level.numNodes].nextid[4],
+                                                &level.nodes[level.numNodes].random,
+                                                &level.nodes[level.numNodes].timeout,
+                                                &level.nodes[level.numNodes].action ); 
+                        if(level.nodes[level.numNodes].timeout <= 0){level.nodes[level.numNodes].timeout = 10000;}
+                        level.numNodes ++;
                 }
         path++;
         }
@@ -929,7 +929,7 @@ void G_PathLoad( void )
             }
         }
     }
-        G_Printf( va("Loaded %d nodes\n", level.numPaths) );
+        G_Printf( va("Loaded %d nodes\n", level.numNodes) );
 }
 
 /*

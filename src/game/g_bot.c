@@ -1235,7 +1235,7 @@ int findClosestNode( vec3_t start )
         int closestNode = 0;
         float closestNodeDistance = Square(2000);
         qboolean nodeFound = qfalse;
-        for(i = 0; i < level.numPaths; i++) //find a nearby path that wasn't used before
+        for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
         {
                 trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
                 if( trace.fraction < 1.0 )
@@ -1292,7 +1292,7 @@ void findNextNode( gentity_t *self )
         if(!self->followingRoute) {
             for(i = 0; i < 5; i++)
             {
-                    if(level.nodes[self->targetNode].nextid[i] < level.numPaths &&
+                    if(level.nodes[self->targetNode].nextid[i] < level.numNodes &&
                             level.nodes[self->targetNode].nextid[i] >= 0)
                     {
                             if(self->lastNodeID >= 0)

@@ -876,7 +876,7 @@ typedef struct
   statsCounters_level humanStatsCounters;
   
   node          nodes[MAX_NODES];
-  int           numPaths;
+  int           numNodes;
   qboolean      drawpath;
   int distNode[MAX_NODES][MAX_NODES];
 } level_locals_t;

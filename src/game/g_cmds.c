@@ -4694,7 +4694,7 @@ static void Cmd_Ignore_f( gentity_t *ent )
     return;
   }*/
   trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
-  for(i = 0; i < level.numPaths; i++ )
+  for(i = 0; i < level.numNodes; i++ )
   {
     Ax = level.nodes[i].coord[0];
     Ay = level.nodes[i].coord[1];
@@ -4813,12 +4813,12 @@ static void Cmd_Ignore_f( gentity_t *ent )
           trap_SendServerCommand( ent-g_entities, "print \"Too close to another node.\n\"");
           return;
         }
-        if(level.numPaths >= MAX_NODES)
+        if(level.numNodes >= MAX_NODES)
         {
           trap_SendServerCommand( ent-g_entities, "print \"Reached Max amount of nodes.\n\"" );
           return;
         }
-        for( i = 0; i < level.numPaths; i++ )
+        for( i = 0; i < level.numNodes; i++ )
         {
           for( i2 = 0;i2 < 5;i2++ )
           {
@@ -4853,23 +4853,23 @@ static void Cmd_Ignore_f( gentity_t *ent )
         }
         else
         {
-          level.nodes[level.numPaths].coord[0] = ent->s.pos.trBase[0];
-          level.nodes[level.numPaths].coord[1] = ent->s.pos.trBase[1];
-          level.nodes[level.numPaths].coord[2] = ent->s.pos.trBase[2];
-          level.nodes[level.numPaths].nextid[0] = 1000 + MAX_NODES;
-          level.nodes[level.numPaths].nextid[1] = 1000 + MAX_NODES;
-          level.nodes[level.numPaths].nextid[2] = 1000 + MAX_NODES;
-          level.nodes[level.numPaths].nextid[3] = 1000 + MAX_NODES;
-          level.nodes[level.numPaths].nextid[4] = 1000 + MAX_NODES;
-          level.nodes[level.numPaths].random = 0;
-          level.nodes[level.numPaths].timeout = 10000;
-          level.nodes[level.numPaths].action = 0;
-          trap_SendServerCommand( ent-g_entities, va("print \"Saved Node #%d.\n\"", level.numPaths ) );
+          level.nodes[level.numNodes].coord[0] = ent->s.pos.trBase[0];
+          level.nodes[level.numNodes].coord[1] = ent->s.pos.trBase[1];
+          level.nodes[level.numNodes].coord[2] = ent->s.pos.trBase[2];
+          level.nodes[level.numNodes].nextid[0] = 1000 + MAX_NODES;
+          level.nodes[level.numNodes].nextid[1] = 1000 + MAX_NODES;
+          level.nodes[level.numNodes].nextid[2] = 1000 + MAX_NODES;
+          level.nodes[level.numNodes].nextid[3] = 1000 + MAX_NODES;
+          level.nodes[level.numNodes].nextid[4] = 1000 + MAX_NODES;
+          level.nodes[level.numNodes].random = 0;
+          level.nodes[level.numNodes].timeout = 10000;
+          level.nodes[level.numNodes].action = 0;
+          trap_SendServerCommand( ent-g_entities, va("print \"Saved Node #%d.\n\"", level.numNodes ) );
           if( level.drawpath == qtrue )
           {
-            node = spawnnode( ent,level.numPaths );
+            node = spawnnode( ent,level.numNodes );
           }
-          level.numPaths++;
+          level.numNodes++;
         }
       }
       else if( !Q_stricmp( cmd, "connect" ) )
@@ -4881,13 +4881,13 @@ static void Cmd_Ignore_f( gentity_t *ent )
         }
         ent->discpathid = -1;
         ent->movepathid = -1;
-        if( ent->pathid < 0 || ent->pathid >= level.numPaths )
+        if( ent->pathid < 0 || ent->pathid >= level.numNodes )
         {
           ent->pathid = nearbynodeid[0];
           trap_SendServerCommand( ent-g_entities, va("print \"Node #%d selected. Now select another node to connect to.\n\"", nearbynodeid[0] ) );
           return;
         }
-        else if( ent->pathid > -1 && ent->pathid < level.numPaths )
+        else if( ent->pathid > -1 && ent->pathid < level.numNodes )
         {
           linked = qfalse;
           linked2 = qfalse;
@@ -4900,11 +4900,11 @@ static void Cmd_Ignore_f( gentity_t *ent )
           }
           for( i = 0; i < 5; i++ )
           {
-            if( level.nodes[nearbynodeid[0]].nextid[i] < level.numPaths )
+            if( level.nodes[nearbynodeid[0]].nextid[i] < level.numNodes )
             {
               countz++;
             }
-            if( level.nodes[ent->pathid].nextid[i] < level.numPaths )
+            if( level.nodes[ent->pathid].nextid[i] < level.numNodes )
             {
               countz2++;
             }
@@ -5006,13 +5006,13 @@ static void Cmd_Ignore_f( gentity_t *ent )
       {
         ent->discpathid = -1;
         ent->pathid = -1;
-        if( ent->movepathid < 0 || ent->movepathid >= level.numPaths )
+        if( ent->movepathid < 0 || ent->movepathid >= level.numNodes )
         {
           ent->movepathid = nearbynodeid[0];
           trap_SendServerCommand( ent-g_entities, va("print \"Node #%d Selected.\n\"", nearbynodeid[0] ) );
           return;
         }
-        else if(ent->movepathid >= 0 && ent->movepathid < level.numPaths)
+        else if(ent->movepathid >= 0 && ent->movepathid < level.numNodes)
         {
           if( nearbynodeid[0] == ent->movepathid )
           {
@@ -5044,7 +5044,7 @@ static void Cmd_Ignore_f( gentity_t *ent )
           trap_SendServerCommand( ent-g_entities, "print \"No nearby nodes.\n\"" );
           return;
         }
-        for( i = 0; i < level.numPaths; i++ )
+        for( i = 0; i < level.numNodes; i++ )
         {
           for( i2 = 0; i2 < 5; i2++ )
           {
@@ -5070,13 +5070,13 @@ static void Cmd_Ignore_f( gentity_t *ent )
           trap_SendServerCommand( ent-g_entities, "print \"No nearby nodes.\n\"" );
           return;
         }
-        if( ent->discpathid < 0 || ent->discpathid >= level.numPaths )
+        if( ent->discpathid < 0 || ent->discpathid >= level.numNodes )
         {
           ent->discpathid = nearbynodeid[0];
           trap_SendServerCommand( ent-g_entities, va( "print \"Node #%d Selected.\n\"", nearbynodeid[0] ) );
           return;
         }
-        else if( ent->discpathid >= 0 && ent->discpathid < level.numPaths )
+        else if( ent->discpathid >= 0 && ent->discpathid < level.numNodes )
         {
           if( nearbynodeid[0] == ent->discpathid )
           {
@@ -5138,7 +5138,7 @@ static void Cmd_Ignore_f( gentity_t *ent )
         {
           trap_SendServerCommand( ent-g_entities, "print \"Couldn't Open File.  Created a New file.\n\"" );
         }
-        for( i = 0; i < level.numPaths; i++ )
+        for( i = 0; i < level.numNodes; i++ )
         {
           for( i2 = 0; i2 < 5; i2++ )
           {

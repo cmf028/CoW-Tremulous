@@ -7249,7 +7249,7 @@ qboolean G_admin_L1(gentity_t *ent, int skiparg ){
     if( level.drawpath == qfalse )
     {
         ADMP( "^2Drawing Paths\n" );
-        for( i = 0; i < level.numPaths; i++ )
+        for( i = 0; i < level.numNodes; i++ )
         {
         draw = qtrue;
         for( i2 = 0; i2 < 5; i2++ )
@@ -7312,7 +7312,7 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
         if (found == qtrue) { ADMP( "^7Hiding Nodes.\n" );return qtrue; }
     }
     
-    for ( i = 0; i < level.numPaths; i++ )
+    for ( i = 0; i < level.numNodes; i++ )
     {
         for (i2 = 0; i2 < 5; i2++)
         {
@@ -7359,7 +7359,7 @@ void nodethink( gentity_t *ent )
   int i;
   vec3_t pos;
 
-  if( ent->pathid < 0 || level.numPaths <= ent->pathid )
+  if( ent->pathid < 0 || level.numNodes <= ent->pathid )
   {
     G_FreeEntity(ent);
     return;
