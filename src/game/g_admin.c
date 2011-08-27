@@ -3100,7 +3100,6 @@ qboolean G_admin_botcfg(gentity_t *ent, int skiparg) {
     char command[MAX_NAME_LENGTH];
     char cfgName[MAX_STRING_CHARS];
     char *config;
-    char line[MAX_STRING_CHARS];
     char cvarValue[MAX_NAME_LENGTH];
     char cvarName[MAX_NAME_LENGTH];
     int len;
@@ -3138,6 +3137,8 @@ qboolean G_admin_botcfg(gentity_t *ent, int skiparg) {
                 break;
             trap_Cvar_Set(cvarName,cvarValue);
         }
+        //we lose cfgName for some reason, so get it back
+        G_SayArgv(2 + skiparg, cfgName, sizeof(cfgName));
         trap_SendServerCommand( -1, va("print \"Loaded bot config: %s.cfg\n\"",cfgName) );
         return qtrue;
     } else if(!Q_stricmp("save",command)) {
