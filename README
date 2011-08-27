@@ -1,0 +1,24 @@
+CoW Tremulous QVM v1.1
+
+Current Features (Over Lakitu QVM 5.5):
+Advanced bots with route finding capabilities and waypoint support. Entirely customisable!
+!loadlayout allows loading of a new layout without a restart
+!loadrotation allows the changing of rotations on demand
+!strip and associated commands allow admins to control a player's access to weapons/armor/classes.
+
+Bot Specific Features:
+!botcfg allows loading/saving of bot configuration files
+!botset allows the changing of bot abilities
+!botcmd changes the bots behavior
+!bot adds bots with a specified skill level
+!drawnodes shows the waypoints
+/node allows the making of waypoints for the bots
+
+Bots can:
+Go to a medistat to heal
+Go to an armoury to buy weapons and armor
+Evolve
+Use secondary abilities like lighting, pounce, snipe, charge
+Wallcrawl
+Use waypoints to navigate the map and go to a location without getting stuck
+Effectively dodge.
