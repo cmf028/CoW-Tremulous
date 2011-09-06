@@ -1376,6 +1376,8 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
     vec3_t start = {0,0,0}; 
     vec3_t end = {0,0,0};
     vec3_t  forward, right, up;
+    vec3_t mins,maxs;
+    trace_t trace;
     
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, start);
@@ -1414,7 +1416,17 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
         }
     }
         self->lastRouteSearch = level.time;
-        self->startNode = startNum;
+        BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ],
+                             mins, maxs, NULL, NULL, NULL );
+        
+        //do a trace to the second node in the route to see if we can skip the first (and thus not backtrack if we were going to)
+        trap_Trace( &trace, start, mins, maxs, level.nodes[self->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT );
+        
+        //we can get to that node
+        if(trace.fraction == 1) 
+            self->startNode = self->routeToTarget[startNum];
+        else
+            self->startNode = startNum;
         
 }
     
