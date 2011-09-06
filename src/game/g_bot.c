@@ -1418,6 +1418,8 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
         self->lastRouteSearch = level.time;
         BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ],
                              mins, maxs, NULL, NULL, NULL );
+        VectorScale(maxs,.5,maxs);
+        VectorScale(mins,.5,mins);
         
         //do a trace to the second node in the route to see if we can skip the first (and thus not backtrack if we were going to)
         trap_Trace( &trace, start, mins, maxs, level.nodes[self->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT );
