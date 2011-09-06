@@ -4675,7 +4675,6 @@ static void Cmd_Ignore_f( gentity_t *ent )
   qboolean linked2 = qfalse;
   qboolean deleted = qfalse;
   gentity_t *node;
-  ent->pathid = -1;
 
   if(g_pathediting.integer <= 0)
   {
