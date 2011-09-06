@@ -84,8 +84,15 @@ void G_BotAdd( char *name, int team, int skill ) {
     bot->state = FINDNEWNODE;
     bot->timeFoundEnemy = 0;
     bot->followingRoute = qfalse;
-    bot->aimSlowness = (float) bot->botSkillLevel / 80;
-    bot->aimShake = (int) (bot->botTeam == PTE_HUMANS) ? 100 * (10 - bot->botSkillLevel)/2 + 0.5 : (10-bot->botSkillLevel)/2+0.5;
+    
+    //different aim for different teams
+    if(bot->botTeam == PTE_HUMANS) {
+        bot->aimSlowness = (float) bot->botSkillLevel / 80;
+        bot->aimShake = (int) 100 * (10 - bot->botSkillLevel)/2 + 0.5;
+    } else {
+        bot->aimSlowness = (float) bot->botSkillLevel / 40;
+        bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
+    }
 
     // register user information
     userinfo[0] = '\0';
