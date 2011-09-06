@@ -7344,13 +7344,6 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
     return qtrue;
 }
 qboolean G_drawnodes( gentity_t *ent, int skiparg ) {
-    
-    
-    if (g_pathediting.integer <= 0)
-    {
-        ADMP( "^7Path editing is disabled\n" );
-        return qfalse;
-    }
         return DrawNodes( ent, qtrue );
 }
 
