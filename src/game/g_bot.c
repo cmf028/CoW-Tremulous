@@ -757,7 +757,8 @@ void botAimAtTarget( gentity_t *self, vec3_t target, usercmd_t *rAngles)
         }
 
         AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
-
+        //save bandwidth
+        SnapVector(aimAngles);
         rAngles->angles[0] = aimAngles[0];
         rAngles->angles[1] = aimAngles[1];
         rAngles->angles[2] = aimAngles[2];
@@ -857,7 +858,8 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     VectorMA( muzzle, maxs[1], forward, end );
-    
+    //save bandwidth
+    SnapVector(end);
     trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
     traceEnt = &g_entities[ trace.entityNum ];
     
@@ -1033,7 +1035,8 @@ qboolean botWillHitTarget( gentity_t *self, gentity_t *target ) {
 
         getWeaponAttributes(self,&range,&width);
         VectorMA( muzzle, range, forward, end );
-    
+        //save bandwidth
+        SnapVector(end);
         G_UnlaggedOn( self, muzzle, range );
         if(width > 0) {
             VectorSet( mins, -width, -width, -width );
