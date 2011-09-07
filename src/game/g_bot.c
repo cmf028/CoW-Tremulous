@@ -478,6 +478,7 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
 
 void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
     int tempEntityIndex = botFindDamagedFriendlyStructure(self);
+    vec3_t tmpVec;
     //if we have ckit and stuff is damaged
     if (BG_InventoryContainsWeapon( WP_HBUILD, self->client->ps.stats)) {
                 
@@ -490,14 +491,15 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
         //use waypoints to try to get to target
         if(self->botDest.ent != self->botTarget || self->botDest.ent == NULL) {
             self->botDest.ent = self->botTarget;
-            VectorCopy(self->botTarget->s.pos.trBase, self->botDest.coord);
+            VectorCopy(self->botTarget->s.origin, self->botDest.coord);
             findRouteToTarget(self, self->botDest.coord);
             setNewRoute(self);
         }
                 
         //have reached end of path, continue towards buildable from here
         if( self->targetNode == -1) {
-            goToward(self,self->botDest.coord, botCmdBuffer);
+            botGetAimLocation(self->botDest.ent,&tmpVec);
+            goToward(self,tmpVec, botCmdBuffer);
             //in case we get stuck, find a new route to the target and follow it
             if(self->timeFoundNode + 10000 < level.time) {
                 findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
@@ -505,7 +507,7 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
             }
         }
         if( botGetDistanceBetweenPlayer( self, self->botTarget ) <
-            100 && botWillHitTarget(self,self->botTarget)) {
+            100) {
             // If we are within the distance of the structure, than we
             // start directly with repairing
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
@@ -707,6 +709,9 @@ void botGetAimLocation( gentity_t *target, vec3_t *aimLocation) {
     
     if(target->client && target->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS)
         (*aimLocation)[2] += target->r.maxs[2] * 0.85;
+    if(target->s.eType == ET_BUILDABLE) {
+        VectorCopy( target->s.origin, *aimLocation );
+    }
    // return aimLocation;
 }
 
@@ -892,30 +897,30 @@ qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target, usercmd_t
                 case PCL_ALIEN_LEVEL0:
                     break; //nothing, auto hit
                 case PCL_ALIEN_LEVEL1:
-                    if(botWillHitTarget(self, target))
+                    if(botWillHitEnemy(self, target))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL1_UPG:
                     if (random() > 0.5)
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //gas
-                    else if(botWillHitTarget( self, target ))
+                    else if(botWillHitEnemy( self, target ))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL2:
-                    if(botWillHitTarget(self, target))
+                    if(botWillHitEnemy(self, target))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL2_UPG:
                     if (Distance( self->s.pos.trBase, target->s.pos.trBase ) > LEVEL2_CLAW_RANGE)
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //zap
-                    else if(botWillHitTarget( self, target ))
+                    else if(botWillHitEnemy( self, target ))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL3:
                     if(Distance( self->s.pos.trBase, target->s.pos.trBase ) > 150 && 
                         self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
-                    else if(botWillHitTarget( self, target))
+                    else if(botWillHitEnemy( self, target))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL3_UPG:
@@ -927,14 +932,14 @@ qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target, usercmd_t
                         if(Distance( self->s.pos.trBase, target->s.pos.trBase ) > 150 && 
                             self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
                             botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
-                        else if(botWillHitTarget(self, target))
+                        else if(botWillHitEnemy(self, target))
                             botCmdBuffer->buttons |= BUTTON_ATTACK;
                     }
                     break;
                 case PCL_ALIEN_LEVEL4:
                     if (Distance( self->s.pos.trBase, target->s.pos.trBase ) > LEVEL4_CLAW_RANGE)
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //charge
-                    else if(botWillHitTarget(self, target))
+                    else if(botWillHitEnemy(self, target))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 default: break; //nothing
