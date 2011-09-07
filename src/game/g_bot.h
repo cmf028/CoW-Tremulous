@@ -36,7 +36,7 @@ int botFindDamagedFriendlyStructure( gentity_t *self );
 int botFindMedistat( gentity_t *self );
 int botFindArmoury( gentity_t *self );
 int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
-qboolean botWillHitTarget( gentity_t *self, gentity_t *target );
+qboolean botWillHitEnemy( gentity_t *self, gentity_t *target );
 int botGetDistanceBetweenPlayer( gentity_t *self, gentity_t *player );
 qboolean botPathIsBlocked( gentity_t *self );
 qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target , usercmd_t *botCmdBuffer);

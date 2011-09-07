@@ -1015,7 +1015,7 @@ qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
     return qfalse;
 }
 
-qboolean botWillHitTarget( gentity_t *self, gentity_t *target ) {
+qboolean botWillHitEnemy( gentity_t *self, gentity_t *target ) {
     trace_t trace;
     gentity_t *traceEnt;
     float width;
@@ -1063,7 +1063,8 @@ qboolean botWillHitTarget( gentity_t *self, gentity_t *target ) {
         traceEnt = &g_entities[ trace.entityNum ];
         
         //target is in range
-        if( traceEnt == target )
+        if( traceEnt->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM] &&
+            ((traceEnt->biteam != self->client->ps.stats[STAT_PTEAM]) || traceEnt->s.eType != ET_BUILDABLE) )
             return qtrue;
         return qfalse;
 }
