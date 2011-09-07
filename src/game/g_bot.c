@@ -794,7 +794,8 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
     VectorSet( range, vectorRange, vectorRange, vectorRange );
     VectorAdd( self->client->ps.origin, range, maxs );
     VectorSubtract( self->client->ps.origin, range, mins );
-
+    SnapVector(mins);
+    SnapVector(maxs);
     total_entities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
     
     for( i = 0; i < total_entities; ++i )
@@ -860,6 +861,8 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     VectorMA( muzzle, maxs[1], forward, end );
     //save bandwidth
     SnapVector(end);
+    SnapVector(mins);
+    SnapVector(maxs);
     trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
     traceEnt = &g_entities[ trace.entityNum ];
     
@@ -968,6 +971,7 @@ qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
     vec3_t    mins, maxs;
     vec3_t  muzzle;
     vec3_t  forward, right, up;
+    vec3_t targetBase;
     if( !self || !target )
         return qfalse;
 
@@ -985,13 +989,15 @@ qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     getWeaponAttributes( self, &range, &width);
+    VectorCopy(target->s.pos.trBase, targetBase);
+    SnapVector(targetBase);
     
     if(width > 0) {
             VectorSet( mins, -width, -width, -width );
             VectorSet( maxs, width, width, width );
-            trap_Trace( &trace, muzzle, mins, maxs, target->s.pos.trBase, self->s.number, MASK_SHOT );
+            trap_Trace( &trace, muzzle, mins, maxs, targetBase, self->s.number, MASK_SHOT );
     } else
-        trap_Trace( &trace, muzzle, NULL, NULL, target->s.pos.trBase, self->s.number, MASK_SHOT );
+        trap_Trace( &trace, muzzle, NULL, NULL, targetBase, self->s.number, MASK_SHOT );
 
     
 
@@ -1041,6 +1047,8 @@ qboolean botWillHitTarget( gentity_t *self, gentity_t *target ) {
         if(width > 0) {
             VectorSet( mins, -width, -width, -width );
             VectorSet( maxs, width, width, width );
+            SnapVector(maxs);
+            SnapVector(mins);
             trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
         } else
             trap_Trace( &trace, muzzle, NULL, NULL, end, self->s.number, MASK_SHOT );
