@@ -858,15 +858,15 @@ qboolean botPathIsBlocked( gentity_t *self ) {
                        mins, maxs, NULL, NULL, NULL );
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, muzzle );
-    VectorMA( muzzle, maxs[1], forward, end );
+    VectorMA( muzzle, 100, forward, end );
     //save bandwidth
     SnapVector(end);
     SnapVector(mins);
     SnapVector(maxs);
-    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
+    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, CONTENTS_SOLID );
     traceEnt = &g_entities[ trace.entityNum ];
     
-    if(traceEnt->health > 0 && (traceEnt != target || !target))
+    if(trace.fraction < 1.0)
     {return qtrue;}
         else
     {return qfalse;}
