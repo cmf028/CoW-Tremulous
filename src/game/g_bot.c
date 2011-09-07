@@ -860,8 +860,8 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     VectorMA( muzzle, 100, forward, end );
     //save bandwidth
-    VectorScale(mins,.8);
-    VectorScale(maxs,.8);
+    VectorScale(mins, 0.8, mins);
+    VectorScale(maxs,0.8, maxs);
     SnapVector(end);
     SnapVector(mins);
     SnapVector(maxs);
