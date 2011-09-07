@@ -860,13 +860,15 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     VectorMA( muzzle, 100, forward, end );
     //save bandwidth
+    VectorScale(mins,.8);
+    VectorScale(maxs,.8);
     SnapVector(end);
     SnapVector(mins);
     SnapVector(maxs);
-    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, CONTENTS_SOLID );
+    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
     traceEnt = &g_entities[ trace.entityNum ];
     
-    if(trace.fraction < 1.0)
+    if(trace.fraction < 1.0 && trace.entityNum != -1)
     {return qtrue;}
         else
     {return qfalse;}
