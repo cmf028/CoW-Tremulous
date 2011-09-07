@@ -858,7 +858,7 @@ qboolean botPathIsBlocked( gentity_t *self ) {
                        mins, maxs, NULL, NULL, NULL );
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, muzzle );
-    VectorMA( muzzle, 100, forward, end );
+    VectorMA( muzzle, 10, forward, end );
     //save bandwidth
     VectorScale(mins, 0.8, mins);
     VectorScale(maxs,0.8, maxs);
