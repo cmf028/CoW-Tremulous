@@ -1379,8 +1379,7 @@ void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     botSlowAim(self, tmpVec, self->aimSlowness, &tmpVec );
     botAimAtTarget(self,tmpVec , botCmdBuffer);
     self->followingRoute = qfalse; //we are not following a route, we are going straight for the target
-    
-    
+    self->timeFoundNode = level.time; //avoid bot bug
 }
 void setNewRoute(gentity_t *self) { 
     //findRouteToTarget(self, self->botDest.coord);
