@@ -248,6 +248,9 @@ void G_BotThink( gentity_t *self) {
     botCmdBuffer.forwardmove = 0;
     botCmdBuffer.rightmove = 0;
     
+    if(g_bot_infinite_funds.integer == 1) 
+        G_AddCreditToClient(self->client, HUMAN_MAX_CREDITS, qtrue);
+    
     G_BotEvolveAI(self, &botCmdBuffer);
     //G_BotBuyAI(self);
     // reset botEnemy if enemy is dead

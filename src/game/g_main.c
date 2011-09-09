@@ -216,6 +216,7 @@ vmCvar_t g_bot_tyrant;
 // misc bot cvars
 vmCvar_t g_bot_attackStruct;
 vmCvar_t g_bot_roam;
+vmCvar_t g_bot_infinite_funds;
 
 //</bot stuff>
 // for editing the bot's paths
@@ -450,6 +451,7 @@ static cvarTable_t   gameCvarTable[ ] =
   // misc bot cvars
   { &g_bot_attackStruct, "g_bot_attackStruct", "1", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   { &g_bot_roam, "g_bot_roam", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
+  { &g_bot_infinite_funds, "g_bot_infinite_funds", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   
   // </bot stuff>
   

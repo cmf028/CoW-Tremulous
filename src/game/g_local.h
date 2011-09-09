@@ -1528,6 +1528,7 @@ extern vmCvar_t g_bot_tyrant;
 //misc bot cvars
 extern vmCvar_t g_bot_attackStruct;
 extern vmCvar_t g_bot_roam;
+extern vmCvar_t g_bot_infinite_funds;
 //</bot stuff>
 
 //path editing, modify bots paths

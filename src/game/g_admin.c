@@ -3171,6 +3171,7 @@ qboolean G_admin_botcfg(gentity_t *ent, int skiparg) {
         
         trap_FS_Write( va("g_bot_attackStruct %d\n",g_bot_attackStruct.integer ? 1:0), 21, f );
         trap_FS_Write( va("g_bot_roam %d\n",g_bot_roam.integer ? 1:0), 13, f );
+        trap_FS_Write( va("g_bot_infinite_funds %d\n",g_bot_infinite_funds.integer ? 1:0), 23, f );
         
         trap_FS_FCloseFile( f );
         trap_SendServerCommand( -1, va("print \"Saved bot config as: %s\n\"",cfgName) );
@@ -3307,12 +3308,15 @@ qboolean G_admin_botset(gentity_t* ent, int skiparg) {
             trap_Cvar_Set("g_bot_roam",realValue);
         else if(!Q_stricmp(attribute, "attackstruct"))
             trap_Cvar_Set("g_bot_attackStruct", realValue);
+        else if(!Q_stricmp(attribute, "infinitefunds"))
+            trap_Cvar_Set("g_bot_infinite_funds", realValue);
         else if(!Q_stricmp(attribute, "all")) {
             trap_Cvar_Set("g_bot_roam",realValue);
             trap_Cvar_Set("g_bot_attackStruct", realValue);
+            trap_Cvar_Set("g_bot_infinite_funds", realValue);
         } else {
             ADMP( "^3!botset: ^7usage: !botset [class] [attribute] [enable/disable]\n" );
-            ADMP( "Available attributes to class ^3bot ^7 are: roam attackstruct all\n");
+            ADMP( "Available attributes to class ^3bot ^7 are: roam attackstruct infinitefunds all\n");
             return qfalse;
         }
     } else { //they did not enter a proper class
