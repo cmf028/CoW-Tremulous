@@ -251,6 +251,7 @@ struct gentity_s
   int				botFriendLastSeen;
   int				botEnemyLastSeen;
   int				botSkillLevel;
+  int                           botReactionTime;
   int				botTeam;
   int timeFoundEnemy;
   int spawnItem;

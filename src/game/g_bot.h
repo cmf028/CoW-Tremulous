@@ -80,9 +80,6 @@ qboolean botWeaponHasLowAmmo(gentity_t *self);
 //How long in milliseconds the bots will chase a friend if he goes out of their sight (humans) or radar (aliens)
 #define BOT_FRIEND_CHASETIME 5000
 
-//How often in milliseconds, we will search for a new, closer enemy when we already have an enemy
-#define BOT_ENEMYSEARCH_INTERVAL 2000
-
 //at what hp do we use medkit?
 #define BOT_USEMEDKIT_HP 30
 
