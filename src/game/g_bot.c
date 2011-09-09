@@ -94,7 +94,7 @@ void G_BotAdd( char *name, int team, int skill ) {
         bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
     }
 
-    bot->botReactionTime = (10 - bot->botSkillLevel) * 1000;
+    bot->botReactionTime = (10 - bot->botSkillLevel) * 100;
     // register user information
     userinfo[0] = '\0';
     Info_SetValueForKey( userinfo, "name", name );
