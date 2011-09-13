@@ -3172,6 +3172,8 @@ qboolean G_admin_botcfg(gentity_t *ent, int skiparg) {
         trap_FS_Write( va("g_bot_attackStruct %d\n",g_bot_attackStruct.integer ? 1:0), 21, f );
         trap_FS_Write( va("g_bot_roam %d\n",g_bot_roam.integer ? 1:0), 13, f );
         trap_FS_Write( va("g_bot_infinite_funds %d\n",g_bot_infinite_funds.integer ? 1:0), 23, f );
+        trap_FS_Write( va("g_bot_survival %d\n",g_bot_survival.integer ? 1:0), 17, f );
+        trap_FS_Write( va("g_bot_wave_interval %d\n",g_bot_wave_interval.integer ? g_bot_wave_interval.integer:0), 40, f );
         
         trap_FS_FCloseFile( f );
         trap_SendServerCommand( -1, va("print \"Saved bot config as: %s\n\"",cfgName) );

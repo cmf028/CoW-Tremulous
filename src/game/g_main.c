@@ -217,6 +217,8 @@ vmCvar_t g_bot_tyrant;
 vmCvar_t g_bot_attackStruct;
 vmCvar_t g_bot_roam;
 vmCvar_t g_bot_infinite_funds;
+vmCvar_t g_bot_survival;
+vmCvar_t g_bot_wave_interval;
 
 //</bot stuff>
 // for editing the bot's paths
@@ -452,6 +454,8 @@ static cvarTable_t   gameCvarTable[ ] =
   { &g_bot_attackStruct, "g_bot_attackStruct", "1", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   { &g_bot_roam, "g_bot_roam", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   { &g_bot_infinite_funds, "g_bot_infinite_funds", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
+  { &g_bot_survival, "g_bot_survival", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
+  { &g_bot_wave_interval, "g_bot_wave_interval", "60", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   
   // </bot stuff>
   
@@ -505,6 +509,7 @@ void CheckExitRules( void );
 
 void G_CountSpawns( void );
 void G_CalculateBuildPoints( void );
+void G_CalculateWaves(void);
 
 /*
 ================
@@ -1085,6 +1090,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
   trap_Cvar_Set( "g_humanKills", 0 );
   trap_Cvar_Set( "g_suddenDeath", 0 );
   level.suddenDeathBeginTime = g_suddenDeathTime.integer * 60000;
+  level.lastWaveTime = 0;
+  level.currentWave = 0;
 
   G_Printf( "-----------------------------------\n" );
 
@@ -1790,7 +1797,54 @@ void G_CalculateStages( void )
     lastHumanStageModCount = g_humanStage.modificationCount;
   }
 }
+/*
+============
+CalculateWaves
 
+Calculates which wave we should be in for bot survival
+============
+*/
+
+void G_CalculateWaves( void ) {
+    if(g_bot_survival.integer == 1) {
+        if(g_bot_wave_interval.integer * 1000 + level.lastWaveTime < level.time && level.currentWave < 8) {
+            level.currentWave++;
+            level.lastWaveTime = level.time;
+            switch(level.currentWave) {
+                case 1: trap_Cvar_Set("g_bot_evolve","1");
+                        trap_Cvar_Set("g_bot_buy","1");
+                        trap_Cvar_Set("g_bot_dretch","1");
+                        break;
+                case 2: trap_Cvar_Set("g_bot_basi","1");
+                        trap_Cvar_Set("g_bot_rifle","1");
+                        break;
+                case 3:
+                        trap_Cvar_Set("g_bot_advbasi","1");
+                        trap_Cvar_Set("g_bot_las","1");
+                        break;
+                case 4:
+                        trap_Cvar_Set("g_bot_mara","1");
+                        trap_Cvar_Set("g_bot_mass","1");
+                        break;
+                case 5:
+                        trap_Cvar_Set("g_bot_advmara","1");
+                        trap_Cvar_Set("g_bot_chain","1");
+                        break;
+                case 6:
+                        trap_Cvar_Set("g_bot_goon","1");
+                        trap_Cvar_Set("g_bot_pulse","1");
+                        break;
+                case 7: trap_Cvar_Set("g_bot_advgoon","1");
+                        trap_Cvar_Set("g_bot_flamer","1");
+                        break;
+                case 8: trap_Cvar_Set("g_bot_tyrant","1");
+                        trap_Cvar_Set("g_bot_luci","1");
+                        break;
+            }
+        }
+    }
+}
+    
 /*
 ============
 CalculateAvgPlayers
@@ -3072,6 +3126,7 @@ void G_RunFrame( int levelTime )
   //TA:
   G_CountSpawns( );
   G_CalculateBuildPoints( );
+  G_CalculateWaves( );
   G_CalculateStages( );
   G_SpawnClients( PTE_ALIENS );
   G_SpawnClients( PTE_HUMANS );

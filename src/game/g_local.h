@@ -880,6 +880,8 @@ typedef struct
   int           numNodes;
   qboolean      drawpath;
   int distNode[MAX_NODES][MAX_NODES];
+  int currentWave;
+  int lastWaveTime;
 } level_locals_t;
 
 #define CMD_CHEAT         0x01
@@ -1529,6 +1531,9 @@ extern vmCvar_t g_bot_tyrant;
 extern vmCvar_t g_bot_attackStruct;
 extern vmCvar_t g_bot_roam;
 extern vmCvar_t g_bot_infinite_funds;
+extern vmCvar_t g_bot_survival;
+extern vmCvar_t g_bot_wave_interval;
+
 //</bot stuff>
 
 //path editing, modify bots paths
