@@ -286,8 +286,8 @@ g_admin_cmd_t g_admin_cmds[ ] =
     },
 
     {"rotation", G_admin_listrotation, "j",
-       "display a list of maps that are in the active map rotation",
-       ""
+       "display a list of maps that are in the rotation",
+       "(^5rotation name^7)"
     },
 
     {"setlevel", G_admin_setlevel, "s",
@@ -4960,21 +4960,46 @@ qboolean G_admin_listrotation( gentity_t *ent, int skiparg )
 {
   int i, j, statusColor;
   char *status = '\0';
-
+  char rotationName[MAX_NAME_LENGTH];
+  qboolean foundRotation = qfalse;
   extern mapRotations_t mapRotations;
-
-  // Check for an active map rotation
-  if ( !G_MapRotationActive() ||
-       g_currentMapRotation.integer == NOT_ROTATING )
-  {
-    trap_SendServerCommand( ent-g_entities, "print \"^3!rotation: ^7There is no active map rotation on this server\n\"" );
-    return qfalse;
+ 
+  if(G_SayArgc() > 1 + skiparg) {
+    G_SayArgv(1 + skiparg, rotationName,sizeof(rotationName));
+    
+    //check if the specified rotation exists
+    for( i = 0; i < mapRotations.numRotations; i++ )
+    {
+        if (!Q_stricmp(mapRotations.rotations[i].name,rotationName) )
+        {
+            foundRotation = qtrue;
+        }
+    }
+    //does not exist
+    if(!foundRotation) {
+        ADMP(va("print \"^3!rotation: ^7invalid rotation \'%s\'\n\"",rotationName) );
+        //print out a list of available rotations
+        if(mapRotations.numRotations > 0) {
+            ADMP("^3Available rotations:\n");
+            for(i=0;i<mapRotations.numRotations;i++)
+                ADMP(va("%s\n",mapRotations.rotations[i].name));
+        }
+        return qfalse;
+    }
+  } else {
+    // Check for an active map rotation
+    if ( !G_MapRotationActive() ||
+        g_currentMapRotation.integer == NOT_ROTATING )
+    {
+        trap_SendServerCommand( ent-g_entities, "print \"^3!rotation: ^7There is no active map rotation on this server\n\"" );
+        return qfalse;
+    }
   }
 
-  // Locate the active map rotation and output its contents
+  // Locate the rotation and output its contents
   for( i = 0; i < mapRotations.numRotations; i++ )
   {
-    if ( i == g_currentMapRotation.integer )
+    if ( (i == g_currentMapRotation.integer && G_SayArgc() <= 1 + skiparg) || !Q_stricmp(mapRotations.rotations[i].name,rotationName) )
     {
       ADMBP_begin();
       ADMBP( va( "^3!rotation: ^7%s\n", mapRotations.rotations[ i ].name ) );
@@ -5001,7 +5026,7 @@ qboolean G_admin_listrotation( gentity_t *ent, int skiparg )
 
       ADMBP_end();
 
-      // No maps were found in the active map rotation
+      // No maps were found in the rotation
       if ( mapRotations.rotations[ i ].numMaps < 1 )
       {
         trap_SendServerCommand( ent-g_entities, "print \"  - ^7Empty!\n\"" );
