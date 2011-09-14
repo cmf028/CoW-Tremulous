@@ -2617,7 +2617,15 @@ qboolean G_admin_loadrotation(gentity_t *ent, int skiparg) {
         Q_strcat(strBuf,sizeof(strBuf),"0 ");
             
     }
-    ADMP( va( "^3!loadrotation: ^7Rotation %s does not exist\n", rotationName) );
+    ADMP( va( "^3!loadrotation: ^7invalid rotation name \'%s\'\n", rotationName) );
+    
+    //print out a list of available rotations
+    if(mapRotations.numRotations > 0) {
+        ADMP("^3Available rotations:\n");
+        for(i=0;i<mapRotations.numRotations;i++)
+            ADMP(va("%s\n",mapRotations.rotations[i].name));
+    }
+        
     return qfalse;
 }
                     
