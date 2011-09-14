@@ -4977,7 +4977,7 @@ qboolean G_admin_listrotation( gentity_t *ent, int skiparg )
     }
     //does not exist
     if(!foundRotation) {
-        ADMP(va("print \"^3!rotation: ^7invalid rotation \'%s\'\n\"",rotationName) );
+        ADMP(va("^3!rotation: ^7invalid rotation \'%s\'\n",rotationName) );
         //print out a list of available rotations
         if(mapRotations.numRotations > 0) {
             ADMP("^3Available rotations:\n");
