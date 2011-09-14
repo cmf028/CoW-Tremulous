@@ -94,7 +94,6 @@ void G_BotAdd( char *name, int team, int skill ) {
         bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
     }
 
-    bot->botReactionTime = (10 - bot->botSkillLevel) * 1000
     // register user information
     userinfo[0] = '\0';
     Info_SetValueForKey( userinfo, "name", name );
@@ -270,7 +269,7 @@ void G_BotThink( gentity_t *self) {
         BG_ActivateUpgrade( UP_MEDKIT, self->client->ps.stats );
     
     //every 2 seconds, look for a new closer enemy or when we dont have an enemy
-    if(self->timeFoundEnemy + self->botReactionTime < level.time) {
+    if(self->timeFoundEnemy + BOT_ENEMYSEARCH_INTERVAL < level.time || !self->botEnemy) {
         tempEntityIndex = botFindClosestEnemy( self, qfalse );
         if( tempEntityIndex != -1 && self->botEnemy != &g_entities[tempEntityIndex]) {
             self->botEnemy = &g_entities[tempEntityIndex];
