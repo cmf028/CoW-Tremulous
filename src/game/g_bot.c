@@ -88,7 +88,7 @@ void G_BotAdd( char *name, int team, int skill ) {
     //different aim for different teams
     if(bot->botTeam == PTE_HUMANS) {
         bot->aimSlowness = (float) bot->botSkillLevel / 80;
-        bot->aimShake = (int) 100 * (10 - bot->botSkillLevel)/2 + 0.5;
+        bot->aimShake = (int) 300 * (10 - bot->botSkillLevel)/2 + 0.5;
     } else {
         bot->aimSlowness = (float) bot->botSkillLevel / 40;
         bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
