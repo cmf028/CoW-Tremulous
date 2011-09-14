@@ -268,8 +268,8 @@ void G_BotThink( gentity_t *self) {
     if(self->health <= 30)
         BG_ActivateUpgrade( UP_MEDKIT, self->client->ps.stats );
     
-    //every 2 seconds, look for a new closer enemy or when we dont have an enemy
-    if(self->timeFoundEnemy + BOT_ENEMYSEARCH_INTERVAL < level.time || !self->botEnemy) {
+    //every once in a while, look for a new enemy in LOS
+    if(self->timeFoundEnemy + BOT_ENEMYSEARCH_INTERVAL < level.time) {
         tempEntityIndex = botFindClosestEnemy( self, qfalse );
         if( tempEntityIndex != -1 && self->botEnemy != &g_entities[tempEntityIndex]) {
             self->botEnemy = &g_entities[tempEntityIndex];
