@@ -200,7 +200,7 @@ g_admin_cmd_t g_admin_cmds[ ] =
     
     {"loadrotation",G_admin_loadrotation,"n",
       "loads a new rotation",
-      "(^5rotation#^7)"
+      "(^5rotation name^7)"
     },
     
     {"lock", G_admin_lock, "K",
@@ -2590,58 +2590,35 @@ qboolean G_admin_loadlayout( gentity_t *ent, int skiparg ) {
 }
 qboolean G_admin_loadrotation(gentity_t *ent, int skiparg) {
     extern mapRotations_t mapRotations;
-    char rotationNum[2];
-    G_SayArgv( 1 + skiparg, rotationNum, sizeof( rotationNum ) );
+    char rotationName[MAX_NAME_LENGTH];
+    char strBuf[MAX_NAME_LENGTH];
+    int i;
     
+    G_SayArgv( 1 + skiparg, rotationName, sizeof( rotationName) );
     
-    //hack #1
-    if(atoi(&rotationNum[0])>mapRotations.numRotations || atoi(&rotationNum[0]) > 7) {
-	ADMP( va( "^3!loadrotation: ^7Rotation does not exist\n") );
-        return qfalse;
-    }
-        
-            //hack #2
-            switch (rotationNum[0]) {
-                case '1': trap_Cvar_Set("g_currentmap", "-1 0 0 0 0 0 0");
-                trap_Cvar_Set( "g_currentMapRotation", "0");
-                level.lastWin = PTE_NONE;
-                break;
-                case '2': trap_Cvar_Set("g_currentmap", "0 -1 0 0 0 0 0");
-                trap_Cvar_Set("g_currentMapRotation", "1");
-                level.lastWin = PTE_NONE;
-                break;
-                case '3': trap_Cvar_Set("g_currentmap", "0 0 -1 0 0 0 0");
-                trap_Cvar_Set("g_currentMapRotation","2");
-                level.lastWin = PTE_NONE;
-                break;
-                case '4': trap_Cvar_Set("g_currentmap", "0 0 0 -1 0 0 0");
-                trap_Cvar_Set("g_currentMapRotation","3");
-                level.lastWin = PTE_NONE;
-                break;
-                case '5': trap_Cvar_Set("g_currentmap", "0 0 0 0 -1 0 0");
-                trap_Cvar_Set("g_currentMapRotation","4");
-                level.lastWin = PTE_NONE;
-                break;
-                case '6': trap_Cvar_Set("g_currentmap", "0 0 0 0 0 -1 0");
-                trap_Cvar_Set("g_currentMapRotation","5");
-                level.lastWin = PTE_NONE;
-                break;
-                case '7': trap_Cvar_Set("g_currentmap", "0 0 0 0 0 0 -1");
-                trap_Cvar_Set("g_currentMapRotation","6");
-                level.lastWin = PTE_NONE;
-                break;
-		default: ADMP( va( "^3!loadrotation: ^7Invalid Rotation\n") );return qfalse;break;
-            }
+    for(i=0;i<mapRotations.numRotations;i++) {
+        if(!Q_stricmp(mapRotations.rotations[i].name,rotationName)) {
+            
+            Q_strcat(strBuf,sizeof(strBuf),"-1");
+            trap_Cvar_Set("g_currentMapRotation", va("%d",i));
+            trap_Cvar_Set("g_currentmap", strBuf );
+            level.lastWin = PTE_NONE;
+            
             AP( va( "print \"^3!loadrotation: ^7%s^7 decided to load another rotation\n\"",
                     ( ent ) ? G_admin_adminPrintName( ent ) : "console" ) );
             
             trap_SetConfigstring( CS_WINNER, "Evacuation" );
             
             LogExit( va( "loadrotation was run by %s",
-            ( ent ) ? G_admin_adminPrintName( ent ) : "console" ) );
-            G_admin_maplog_result( "N" );
-            
+                         ( ent ) ? G_admin_adminPrintName( ent ) : "console" ) );
+                         G_admin_maplog_result( "N" );
             return qtrue;
+        }
+        Q_strcat(strBuf,sizeof(strBuf),"0 ");
+            
+    }
+    ADMP( va( "^3!loadrotation: ^7Rotation %s does not exist\n", rotationName) );
+    return qfalse;
 }
                     
 int G_admin_parse_time( const char *time )
