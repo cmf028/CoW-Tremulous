@@ -88,7 +88,7 @@ void G_BotAdd( char *name, int team, int skill ) {
     //different aim for different teams
     if(bot->botTeam == PTE_HUMANS) {
         bot->aimSlowness = (float) bot->botSkillLevel / 80;
-        bot->aimShake = (int) 100 * (10 - bot->botSkillLevel)/2 + 0.5;
+        bot->aimShake = (int) 500 * (10 - bot->botSkillLevel)/2 + 0.5;
     } else {
         bot->aimSlowness = (float) bot->botSkillLevel / 40;
         bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
@@ -1376,9 +1376,12 @@ void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
 }
 void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     vec3_t tmpVec;
+    vec3_t checkVec;
     self->state = TARGETOBJECTIVE;
-    //botGetAimLocation(target, &tmpVec);
-    botShakeAim(self,target,&tmpVec);
+    botGetAimLocation(self->botDest.ent, &checkVec);
+    //dont shake the aim if we are aiming at a building
+    if(self->botDest.ent->s.eType != ET_BUILDABLE && VectorCompare(checkVec, target))
+        botShakeAim(self,target,&tmpVec);
     botSlowAim(self, tmpVec, self->aimSlowness, &tmpVec );
     botAimAtTarget(self,tmpVec , botCmdBuffer);
     self->followingRoute = qfalse; //we are not following a route, we are going straight for the target
