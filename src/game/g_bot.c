@@ -1183,9 +1183,10 @@ int findClosestNode( vec3_t start )
         int closestNode = 0;
         float closestNodeDistance = Square(2000);
         qboolean nodeFound = qfalse;
+        CONTENTS_BODY;
         for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
         {
-                trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
+                trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_PLAYERSOLID );
                 if( trace.fraction < 1.0 )
                 {continue;}
                 //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here)
@@ -1206,7 +1207,26 @@ int findClosestNode( vec3_t start )
         }
         else
         {
-                
+            //try to find closest node without checking for LOS from start point
+            //last ditch attempt to compensate for weird (glitch) building positons and bad node layouts
+            for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
+            {
+                //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here
+                //adding the height difference to the distance to get a more reliable path (more likely that wanted node is on same level as start)
+                distance = (float) DistanceSquared(level.nodes[i].coord,start) + (Square(start[2]) - Square(level.nodes[i].coord[2]));
+                if(distance < Square(5000))
+                {
+                    if(closestNodeDistance > distance)
+                    {
+                        closestNode = i;
+                        closestNodeDistance = distance;
+                        nodeFound = qtrue;
+                    }
+                }
+            }
+            if(nodeFound == qtrue)
+                return closestNode;
+            else //there are no nodes on the map
                 return -1;
         }
 }
