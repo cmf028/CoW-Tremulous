@@ -62,6 +62,8 @@ int botFindBuilding(gentity_t *self, int buildingType, int range);
 void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec );
 qboolean G_BotCheckForSpawningPlayers( gentity_t *self );
 qboolean botWeaponHasLowAmmo(gentity_t *self);
+void setSkill(gentity_t *self, int skill);
+
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
 

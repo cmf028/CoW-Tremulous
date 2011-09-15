@@ -67,21 +67,15 @@ void G_BotAdd( char *name, int team, int skill ) {
     bot->botEnemy = NULL;
     bot->botFriendLastSeen = 0;
     bot->botEnemyLastSeen = 0;
-    bot->botSkillLevel = skill;
+   
     bot->botTeam = team;
     bot->spawnItem = WP_HBUILD;
     bot->state = FINDNEWNODE;
     bot->timeFoundEnemy = 0;
     bot->followingRoute = qfalse;
     
-    //different aim for different teams
-    if(bot->botTeam == PTE_HUMANS) {
-        bot->aimSlowness = (float) bot->botSkillLevel / 80;
-        bot->aimShake = (int) 300 * (10 - bot->botSkillLevel)/2 + 0.5;
-    } else {
-        bot->aimSlowness = (float) bot->botSkillLevel / 40;
-        bot->aimShake = (int) (10 - bot->botSkillLevel)/2 + .05;
-    }
+    setSkill(bot, skill);
+    
 
     // register user information
     userinfo[0] = '\0';
@@ -450,7 +444,7 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
         if(followFriend) {
             distance = botGetDistanceBetweenPlayer(self, self->botFriend);
             botGetAimLocation(self->botFriend, &tmpVec);
-            botSlowAim(self, tmpVec, self->aimSlowness, &tmpVec );
+            botSlowAim(self, tmpVec, self->botSkill.aimSlowness, &tmpVec );
             botAimAtTarget(self,tmpVec , botCmdBuffer);
 
             // enable wallwalk
@@ -717,8 +711,6 @@ void botAimAtTarget( gentity_t *self, vec3_t target, usercmd_t *rAngles)
 
         if( ! (self && self->client) )
                 return;
-        
-       //botSlowAim( self, target, (float) self->botSkillLevel / 20, &tmpVec);
         VectorCopy( self->s.pos.trBase, viewBase );
         viewBase[2] += self->client->ps.viewheight;
         
@@ -770,8 +762,8 @@ void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec )
     len = VectorLength(aim)/1000;
     VectorNormalize(aim);
     speedAngle = RAD2DEG( acos( DotProduct( forward, aim ) ) )/100;
-    VectorScale(up, speedAngle * len * crandom() * self->aimShake, up);
-    VectorScale(right, speedAngle * len * crandom() * self->aimShake, right);
+    VectorScale(up, speedAngle * len * crandom() * self->botSkill.aimShake, up);
+    VectorScale(right, speedAngle * len * crandom() * self->botSkill.aimShake, right);
     VectorAdd(target, up, *rVec);
     VectorAdd(*rVec, up, *rVec);
 }
@@ -1366,7 +1358,7 @@ void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     self->state = TARGETOBJECTIVE;
     //botGetAimLocation(target, &tmpVec);
     botShakeAim(self,target,&tmpVec);
-    botSlowAim(self, tmpVec, self->aimSlowness, &tmpVec );
+    botSlowAim(self, tmpVec, self->botSkill.aimSlowness, &tmpVec );
     botAimAtTarget(self,tmpVec , botCmdBuffer);
     self->followingRoute = qfalse; //we are not following a route, we are going straight for the target
     self->timeFoundNode = level.time; //avoid bot bug
@@ -1455,5 +1447,16 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
                 self->startNode = startNum;
         }
         
+}
+void setSkill(gentity_t *self, int skill) {
+    self->botSkill.level = skill;
+    //different aim for different teams
+    if(self->botTeam == PTE_HUMANS) {
+        self->botSkill.aimSlowness = (float) skill / 80;
+        self->botSkill.aimShake = (int) 300 * (10 - skill)/2 + 0.5;
+    } else {
+        self->botSkill.aimSlowness = (float) skill / 40;
+        self->botSkill.aimShake = (int) (10 - skill)/2 + .05;
+    }
 }
     

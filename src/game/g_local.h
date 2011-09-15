@@ -130,6 +130,12 @@ typedef struct
     gentity_t *ent;
     vec3_t coord;
 }botdestination;
+typedef struct
+{
+    int level;
+    float aimSlowness;
+    float aimShake;
+} botSkill_t;
 //============================================================================
 
 struct gentity_s
@@ -250,7 +256,6 @@ struct gentity_s
   gentity_t         *botFriend;
   int				botFriendLastSeen;
   int				botEnemyLastSeen;
-  int				botSkillLevel;
   int				botTeam;
   int timeFoundEnemy;
   int spawnItem;
@@ -270,8 +275,7 @@ struct gentity_s
   int routeToTarget[MAX_NODES];
   int startNode;
   int lastRouteSearch;
-  float aimSlowness;
-  int aimShake;
+  botSkill_t botSkill;
 
   
 
@@ -332,7 +336,7 @@ struct gentity_s
   
   int               bdnumb;     // buildlog entry ID
 };
-
+    
 typedef enum
 {
   CON_DISCONNECTED,
