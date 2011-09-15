@@ -56,18 +56,7 @@ void G_BotAdd( char *name, int team, int skill ) {
         trap_Printf("no more slots for bot\n");
         return;
     }
-
-    //clientNum = trap_BotAllocateClient();
-
-    //no slots available
-    //if( clientNum == -1 )
-    //return;
-    //char buffer;
-    //buffer = (char) clientNum + 48;
-    //iota( clientNum, buffer, 10);
-    //trap_Printf(va("clientNum = %s\n",clientNum + ""));
     bot = &g_entities[ clientNum ];
-    //bot->client = &level.clients[ clientNum ];
     bot->r.svFlags |= SVF_BOT;
     bot->inuse = qtrue;
 
@@ -99,8 +88,11 @@ void G_BotAdd( char *name, int team, int skill ) {
     Info_SetValueForKey( userinfo, "name", name );
     Info_SetValueForKey( userinfo, "rate", "25000" );
     Info_SetValueForKey( userinfo, "snaps", "20" );
+    
+    //so we can connect if server is password protected
     if(g_needpass.integer == 1)
       Info_SetValueForKey( userinfo, "password", g_password.string);
+    
     trap_SetUserinfo( clientNum, userinfo );
 
     // have it connect to the game as a normal client
@@ -470,7 +462,6 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
             else
                 BG_DeactivateUpgrade( BG_FindUpgradeNumForName((char *)"jetpack"), self->client->ps.stats );
 
-            //botShootIfTargetInRange(self,self->botEnemy);
             if(distance>tooCloseDistance)
                 G_BotMove( self, botCmdBuffer );
         }
@@ -618,16 +609,15 @@ void G_BotSpectatorThink( gentity_t *self ) {
         }
         return;
     }
-    //reset state to FINDNEWPATH
-    self->state = FINDNEWNODE;
-    
+
     //reset botEnemy to NULL if we can roam (for fallback reasons to old behavior)
     if(g_bot_roam.integer == 1)
         self->botEnemy = NULL;
     
+    //reset everything else
     self->followingRoute = qfalse;
-   // self->targetNode = -1;
     self->botDest.ent = NULL;
+    self->state = FINDNEWNODE;
     
     if( self->client->sess.sessionTeam == TEAM_SPECTATOR ) {
         int teamnum = self->client->pers.teamSelection;
@@ -987,18 +977,9 @@ qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
     AngleVectors( self->client->ps.viewangles, forward, right, up );
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
-    //getWeaponAttributes( self, &range, &width);
-    
-    /*if(width > 0) {
-            VectorSet( mins, -width, -width, -width );
-            VectorSet( maxs, width, width, width );
-            trap_Trace( &trace, muzzle, mins, maxs, target->s.origin, self->s.number, MASK_SHOT );
-    } else*/
+
     trap_Trace( &trace, muzzle, NULL, NULL, target->s.origin, self->s.number, MASK_SHOT );
 
-    
-
-    // check if we hit a wall
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
 
@@ -1304,18 +1285,15 @@ void findNextNode( gentity_t *self )
 void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
 {
     vec3_t tmpVec;
-    //bot path stuff
-    //if( !botTargetInRange(self,self->botEnemy)) {
-        switch(self->state)
-        {
-                case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
-                case FINDNEXTNODE: findNextNode(self); break;
-                case TARGETNODE:break; //done in G_FrameThink
-                case LOST: findNewNode(self, botCmdBuffer);break; //LOL :(
-                case TARGETOBJECTIVE: break;
-                default: break;
-        }
-   //}
+    switch(self->state)
+    {
+        case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
+        case FINDNEXTNODE: findNextNode(self); break;
+        case TARGETNODE:break; //basically used as a flag that is checked elsewhere
+        case LOST: findNewNode(self, botCmdBuffer);break; //This should never happen unless there are 0 waypoints on the map
+        case TARGETOBJECTIVE: break;
+        default: break;
+    }
     if(self->state == TARGETNODE && (self->followingRoute || g_bot_roam.integer == 1))
         {
                 #ifdef BOT_DEBUG
@@ -1373,13 +1351,16 @@ void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
                         self->state = FINDNEXTNODE;
                         self->timeFoundNode = level.time;
                 }
-                //if we hvae reached the end of the route
+                //if we have reached the end of the route
                 if(self->targetNode == -1 && self->followingRoute) {
                     self->followingRoute = qfalse; //say we are no longer following the route
                 }
 
         }
 }
+
+//FIXME: refactor G_BotMove calls throughout program to inside this function
+//FIXME: why do we need a target argument? why not just use botDest.coord?
 void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     vec3_t tmpVec;
     self->state = TARGETOBJECTIVE;
@@ -1391,13 +1372,13 @@ void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer) {
     self->timeFoundNode = level.time; //avoid bot bug
 }
 void setNewRoute(gentity_t *self) { 
-    //findRouteToTarget(self, self->botDest.coord);
     self->timeFoundNode = level.time;
     self->lastNodeID = self->targetNode;
     self->targetNode = self->startNode;
     self->state = TARGETNODE;
     self->followingRoute = qtrue;
 }
+//FIXME: this function needs some cleanup work
 void findRouteToTarget( gentity_t *self, vec3_t dest ) {
     long shortdist[MAX_NODES];
     short i;
@@ -1451,6 +1432,10 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
         }
     }
         self->lastRouteSearch = level.time;
+        
+        //now we check to see if we can skip the first node
+        //we want to do this to avoid peculiar backtracking to the first node in the chain
+        
         //check for -1 to keep from crashing
         if(self->routeToTarget[startNum] == -1) {
             self->startNode = startNum;
@@ -1460,7 +1445,7 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
             VectorScale(maxs,.5,maxs);
             VectorScale(mins,.5,mins);
             
-            //do a trace to the second node in the route to see if we can skip the first (and thus not backtrack if we were going to)
+            //do a trace to the second node in the route
             trap_Trace( &trace, start, mins, maxs, level.nodes[self->routeToTarget[startNum]].coord, self->s.number, MASK_PLAYERSOLID );
             
             //we can get to that node
