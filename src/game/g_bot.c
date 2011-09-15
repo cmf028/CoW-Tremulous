@@ -62,11 +62,11 @@ void G_BotAdd( char *name, int team, int skill ) {
 
 
     //default bot data
-    bot->botMind->botCommand = BOT_AUTO;
-    bot->botMind->botFriend = NULL;
-    bot->botMind->botEnemy = NULL;
-    bot->botMind->botFriendLastSeen = 0;
-    bot->botMind->botEnemyLastSeen = 0;
+    bot->botMind->command = BOT_AUTO;
+    bot->botMind->friend = NULL;
+    bot->botMind->enemy = NULL;
+    bot->botMind->friendLastSeen = 0;
+    bot->botMind->enemyLastSeen = 0;
    
     bot->botMind->botTeam = team;
     bot->botMind->spawnItem = WP_HBUILD;
@@ -118,31 +118,31 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
     if( !( bot->r.svFlags & SVF_BOT ) )
         return;
 
-    bot->botMind->botFriend = NULL;
-    bot->botMind->botEnemy = NULL;
-    bot->botMind->botFriendLastSeen = 0;
-    bot->botMind->botEnemyLastSeen = 0;
+    bot->botMind->friend = NULL;
+    bot->botMind->enemy = NULL;
+    bot->botMind->friendLastSeen = 0;
+    bot->botMind->enemyLastSeen = 0;
 
     if( !Q_stricmp( command, "auto" ) )
-        bot->botMind->botCommand = BOT_AUTO;
+        bot->botMind->command = BOT_AUTO;
     else if( !Q_stricmp( command, "attack" ) )
-        bot->botMind->botCommand = BOT_ATTACK;
+        bot->botMind->command = BOT_ATTACK;
     else if( !Q_stricmp( command, "idle" ) )
-        bot->botMind->botCommand = BOT_IDLE;
+        bot->botMind->command = BOT_IDLE;
     else if( !Q_stricmp( command, "defensive" ) ) {
-        bot->botMind->botCommand = BOT_DEFENSIVE;
+        bot->botMind->command = BOT_DEFENSIVE;
         bot->botMind->botDefensePoint = bot->s.pos.trBase;
     } else if( !Q_stricmp( command, "followattack" ) ) {
-        bot->botMind->botCommand = BOT_FOLLOW_FRIEND_ATTACK;
-        bot->botMind->botFriend = master;
+        bot->botMind->command = BOT_FOLLOW_FRIEND_ATTACK;
+        bot->botMind->friend = master;
     } else if( !Q_stricmp( command, "followidle" ) ) {
-        bot->botMind->botCommand = BOT_FOLLOW_FRIEND_IDLE;
-        bot->botMind->botFriend = master;
+        bot->botMind->command = BOT_FOLLOW_FRIEND_IDLE;
+        bot->botMind->friend = master;
     } else if( !Q_stricmp( command, "teamkill" ) )
-        bot->botMind->botCommand = BOT_TEAM_KILLER;
+        bot->botMind->command = BOT_TEAM_KILLER;
     else if( !Q_stricmp( command, "repair" ) ) {
         if(BG_InventoryContainsWeapon(WP_HBUILD, bot->client->ps.stats)) {
-            bot->botMind->botCommand = BOT_REPAIR;
+            bot->botMind->command = BOT_REPAIR;
             G_ForceWeaponChange( bot, WP_HBUILD );
         }
     } else if( !Q_stricmp( command, "spawnrifle" ) )
@@ -150,7 +150,7 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
     else if( !Q_stricmp( command, "spawnckit" ) )
         bot->botMind->spawnItem = WP_HBUILD;
     else {
-        bot->botMind->botCommand = BOT_AUTO;
+        bot->botMind->command = BOT_AUTO;
         trap_SendServerCommand(-1, "print \"Unknown mode. Reverting to auto.\n\"");
     }
     return;
@@ -160,20 +160,20 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
 void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
 {
     int distanceToEnemy = 999;
-    if(self->botMind->botEnemy)
-    distanceToEnemy = botGetDistanceBetweenPlayer(self,self->botMind->botEnemy);
+    if(self->botMind->enemy)
+    distanceToEnemy = botGetDistanceBetweenPlayer(self,self->botMind->enemy);
     //prevent human bots from moving toward target while attacking buildables
     //TODO: Refacter this to be much cleaner and less of a hack
-    if( self->botMind->botEnemy->s.eType != ET_BUILDABLE || 
+    if( self->botMind->enemy->s.eType != ET_BUILDABLE || 
         self->client->ps.stats[ STAT_PTEAM ] == PTE_ALIENS || 
-        !botTargetInRange(self,self->botMind->botEnemy) ||
-        // !botMind->botMind->botTargetInRange(self, (self->botMind->botEnemy) ? self->botMind->botEnemy : self->botMind->botTarget)){
+        !botTargetInRange(self,self->botMind->enemy) ||
+        // !botMind->botMind->targetInRange(self, (self->botMind->enemy) ? self->botMind->enemy : self->botMind->target)){
         (self->client->ps.weapon == WP_FLAMER && distanceToEnemy > FLAMER_LIFETIME * FLAMER_SPEED / 1000) ||
         (self->client->ps.weapon == WP_PAIN_SAW && distanceToEnemy > PAINSAW_RANGE)) {
     
         //dont go too far if in defend mode
         //if( Distance( self->s.pos.trBase, self->botMind->botDefensePoint ) < MGTURRET_RANGE * 3 ||
-            //self->botMind->botCommand != BOT_DEFENSIVE)
+            //self->botMind->command != BOT_DEFENSIVE)
         botCmdBuffer->forwardmove = 127;
 
         if(self->botMind->state != TARGETNODE) {
@@ -216,7 +216,7 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
         
         //stay back as human
         if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-        distanceToEnemy < 300 && botTargetInRange(self, self->botMind->botEnemy) &&
+        distanceToEnemy < 300 && botTargetInRange(self, self->botMind->enemy) &&
         self->client->ps.weapon != WP_PAIN_SAW && 
         self->client->ps.weapon != WP_FLAMER)
         {
@@ -238,15 +238,15 @@ void G_BotThink( gentity_t *self) {
     
     G_BotEvolveAI(self, &botCmdBuffer);
     //G_BotBuyAI(self);
-    // reset botMind->botMind->botEnemy if enemy is dead
-    if(self->botMind->botEnemy && self->botMind->botEnemy->health <= 0) {
-        self->botMind->botEnemy = NULL;
+    // reset botMind->botMind->enemy if enemy is dead
+    if(self->botMind->enemy && self->botMind->enemy->health <= 0) {
+        self->botMind->enemy = NULL;
         self->botMind->state = FINDNEWNODE;
     }
     // if friend dies, reset status to auto
-    if(self->botMind->botFriend && self->botMind->botFriend->health <= 0) {
-        self->botMind->botCommand = BOT_AUTO;
-        self->botMind->botFriend = NULL;
+    if(self->botMind->friend && self->botMind->friend->health <= 0) {
+        self->botMind->command = BOT_AUTO;
+        self->botMind->friend = NULL;
         self->botMind->state = FINDNEWNODE;
     }
 
@@ -257,8 +257,8 @@ void G_BotThink( gentity_t *self) {
     //every once in a while, look for a new enemy in LOS
     if(self->botMind->timeFoundEnemy + BOT_ENEMYSEARCH_INTERVAL < level.time) {
         tempEntityIndex = botFindClosestEnemy( self, qfalse );
-        if( tempEntityIndex != -1 && self->botMind->botEnemy != &g_entities[tempEntityIndex]) {
-            self->botMind->botEnemy = &g_entities[tempEntityIndex];
+        if( tempEntityIndex != -1 && self->botMind->enemy != &g_entities[tempEntityIndex]) {
+            self->botMind->enemy = &g_entities[tempEntityIndex];
             self->botMind->followingRoute = qfalse;
             
         }
@@ -266,18 +266,18 @@ void G_BotThink( gentity_t *self) {
     }
     
     //luci TK prevention
-    if( self->client->ps.weapon == WP_LUCIFER_CANNON && !self->botMind->botEnemy && self->botMind->isFireing)
+    if( self->client->ps.weapon == WP_LUCIFER_CANNON && !self->botMind->enemy && self->botMind->isFireing)
     {
         G_ForceWeaponChange( self, WP_BLASTER );
         G_ForceWeaponChange( self, WP_LUCIFER_CANNON );
         self->botMind->isFireing = qfalse;
     }
     
-    switch( self->botMind->botCommand ) {
+    switch( self->botMind->command ) {
         case BOT_AUTO:
             
             //attack mode
-            if(self->botMind->botEnemy)
+            if(self->botMind->enemy)
                 Attack(self, qfalse, &botCmdBuffer);
             
             //repair mode
@@ -316,7 +316,7 @@ void G_BotThink( gentity_t *self) {
         case BOT_FOLLOW_FRIEND_IDLE:
             Follow(self, &botCmdBuffer);
         case BOT_FOLLOW_FRIEND_ATTACK:
-            if(!self->botMind->botEnemy)
+            if(!self->botMind->enemy)
                 Follow(self, &botCmdBuffer);
             else
                 Attack(self, qfalse, &botCmdBuffer);
@@ -328,7 +328,7 @@ void G_BotThink( gentity_t *self) {
             break;
         default: break;
     }
-    if(self->botMind->botCommand != BOT_IDLE)
+    if(self->botMind->command != BOT_IDLE)
         pathfinding(self, &botCmdBuffer);
     self->client->pers.cmd = botCmdBuffer;
 }
@@ -343,14 +343,14 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
             G_ForceWeaponChange( self, WP_BLASTER );
     // if there is enemy around, rush them and attack.
-        if(self->botMind->botEnemy) {
-                //dont remove the botMind->botMind->botTargetInRange check, otherwise there will be massive ammounts of lag as everyone
+        if(self->botMind->enemy) {
+                //dont remove the botMind->botMind->targetInRange check, otherwise there will be massive ammounts of lag as everyone
                 // needlessly keeps finding new routes whenever the enemy is in range
-            if((self->botMind->botDest.ent != self->botMind->botEnemy || self->botMind->botDest.ent == NULL || !self->botMind->followingRoute) &&
-            !botTargetInRange(self, self->botMind->botEnemy)) {
+            if((self->botMind->botDest.ent != self->botMind->enemy || self->botMind->botDest.ent == NULL || !self->botMind->followingRoute) &&
+            !botTargetInRange(self, self->botMind->enemy)) {
                 //put the assainments in GoToward
-                self->botMind->botDest.ent = self->botMind->botEnemy;
-                VectorCopy(self->botMind->botEnemy->s.pos.trBase, self->botMind->botDest.coord);
+                self->botMind->botDest.ent = self->botMind->enemy;
+                VectorCopy(self->botMind->enemy->s.pos.trBase, self->botMind->botDest.coord);
                 findRouteToTarget(self, self->botMind->botDest.coord);
                 setNewRoute(self);
                 //trap_SendServerCommand(-1,va("print \"New Target Node %d\n\"", self->botMind->targetNode));
@@ -361,45 +361,45 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
             // gesture
             if(random() <= 0.1) botCmdBuffer->buttons |= BUTTON_GESTURE;
                 
-            if(self->botMind->targetNode == -1 || botTargetInRange(self, self->botMind->botEnemy)) {
-                    botGetAimLocation(self->botMind->botEnemy, &tmpVec);
+            if(self->botMind->targetNode == -1 || botTargetInRange(self, self->botMind->enemy)) {
+                    botGetAimLocation(self->botMind->enemy, &tmpVec);
                     goToward(self, tmpVec, botCmdBuffer);
-                    botAttackIfTargetInRange(self,self->botMind->botEnemy, botCmdBuffer);
+                    botAttackIfTargetInRange(self,self->botMind->enemy, botCmdBuffer);
                     #ifdef BOT_DEBUG
                     trap_SendServerCommand(-1,va("print \"Current Target Node %d\n\"", self->botMind->targetNode));
-                    trap_SendServerCommand(-1,va("print \"botMind->botMind->botTargetInRange returns %d\n\"",(int)botMind->botMind->botTargetInRange(self, self->botMind->botEnemy)));
+                    trap_SendServerCommand(-1,va("print \"botMind->botMind->targetInRange returns %d\n\"",(int)botMind->botMind->targetInRange(self, self->botMind->enemy)));
                     #endif
             }
                 
                 // we already have an enemy. See if still in LOS or radar range for aliens
-            if((!botTargetInRange(self,self->botMind->botEnemy) &&
+            if((!botTargetInRange(self,self->botMind->enemy) &&
             self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) ||
-            (Distance(self->s.pos.trBase, self->botMind->botEnemy->s.pos.trBase) > ALIENSENSE_RANGE &&
+            (Distance(self->s.pos.trBase, self->botMind->enemy->s.pos.trBase) > ALIENSENSE_RANGE &&
                 self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS))
             {
                     // if it's been over the maxium enemy chase time since we last saw him in LOS or radar then do nothing, else follow him!
-                if(self->botMind->botEnemyLastSeen + BOT_ENEMY_CHASETIME < level.time) {
+                if(self->botMind->enemyLastSeen + BOT_ENEMY_CHASETIME < level.time) {
                     // forget him!
-                    self->botMind->botEnemy = NULL;
-                    self->botMind->botEnemyLastSeen = 0;
+                    self->botMind->enemy = NULL;
+                    self->botMind->enemyLastSeen = 0;
                     self->botMind->followingRoute = qfalse;
                 } 
                         
                     
                     
             } else {
-                    self->botMind->botEnemyLastSeen = level.time;
+                    self->botMind->enemyLastSeen = level.time;
                     #ifdef BOT_DEBUG
-                    trap_SendServerCommand(-1,va("print \"BotEnemylastSeen: %d\n\"", self->botMind->botEnemyLastSeen));
+                    trap_SendServerCommand(-1,va("print \"BotEnemylastSeen: %d\n\"", self->botMind->enemyLastSeen));
                     #endif
             }
             G_BotMove( self, botCmdBuffer );
         }
-        if(!self->botMind->botEnemy) {
+        if(!self->botMind->enemy) {
             // try to find closest enemy
             tempEntityIndex = botFindClosestEnemy(self, attackTeam);
             if(tempEntityIndex >= 0) {
-                self->botMind->botEnemy = &g_entities[tempEntityIndex];
+                self->botMind->enemy = &g_entities[tempEntityIndex];
                 self->botMind->timeFoundEnemy = level.time;
             }
             self->botMind->followingRoute = qfalse;
@@ -409,7 +409,7 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
         if( BG_ClassHasAbility( self->client->ps.stats[STAT_PCLASS], SCA_WALLCLIMBER ) )
             botCmdBuffer->upmove = -1;
         // jetpack
-        if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && BG_UpgradeIsActive(BG_FindUpgradeNumForName((char *)"jetpack"), self->botMind->botFriend->client->ps.stats))
+        if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && BG_UpgradeIsActive(BG_FindUpgradeNumForName((char *)"jetpack"), self->botMind->friend->client->ps.stats))
             BG_ActivateUpgrade( BG_FindUpgradeNumForName((char *)"jetpack"), self->client->ps.stats );
         else
             BG_DeactivateUpgrade( BG_FindUpgradeNumForName((char *)"jetpack"), self->client->ps.stats );
@@ -421,19 +421,19 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
 
     qboolean followFriend = qfalse;
     vec3_t tmpVec;      
-    if(self->botMind->botFriend) {
+    if(self->botMind->friend) {
         // see if our friend is in LOS or radar range (aliens)
-        if((botTargetInRange(self,self->botMind->botFriend) &&
+        if((botTargetInRange(self,self->botMind->friend) &&
         self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) ||
-        (Distance(self->s.pos.trBase, self->botMind->botFriend->s.pos.trBase) < ALIENSENSE_RANGE &&
+        (Distance(self->s.pos.trBase, self->botMind->friend->s.pos.trBase) < ALIENSENSE_RANGE &&
         self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS))
         {
             // go to him!
             followFriend = qtrue;
-            self->botMind->botFriendLastSeen = level.time;
+            self->botMind->friendLastSeen = level.time;
         } else {
             // if it's been over BOT_FRIEND_CHASETIME since we last saw him then do nothing, else follow him!
-            if(self->botMind->botFriendLastSeen + BOT_FRIEND_CHASETIME < level.time )
+            if(self->botMind->friendLastSeen + BOT_FRIEND_CHASETIME < level.time )
                 // forget him!
                 followFriend = qfalse;
             else {
@@ -442,8 +442,8 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
 
         if(followFriend) {
-            distance = botGetDistanceBetweenPlayer(self, self->botMind->botFriend);
-            botGetAimLocation(self->botMind->botFriend, &tmpVec);
+            distance = botGetDistanceBetweenPlayer(self, self->botMind->friend);
+            botGetAimLocation(self->botMind->friend, &tmpVec);
             botSlowAim(self, tmpVec, self->botMind->botSkill.aimSlowness, &tmpVec );
             botAimAtTarget(self,tmpVec , botCmdBuffer);
 
@@ -451,7 +451,7 @@ void Follow( gentity_t *self, usercmd_t *botCmdBuffer ) {
             if( BG_ClassHasAbility( self->client->ps.stats[STAT_PCLASS], SCA_WALLCLIMBER ) )
                 botCmdBuffer->upmove = -1;
                                             // jetpack
-            if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && BG_UpgradeIsActive(BG_FindUpgradeNumForName((char *)"jetpack"), self->botMind->botFriend->client->ps.stats))
+            if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && BG_UpgradeIsActive(BG_FindUpgradeNumForName((char *)"jetpack"), self->botMind->friend->client->ps.stats))
                 BG_ActivateUpgrade( BG_FindUpgradeNumForName((char*)"jetpack"), self->client->ps.stats );
             else
                 BG_DeactivateUpgrade( BG_FindUpgradeNumForName((char *)"jetpack"), self->client->ps.stats );
@@ -468,16 +468,16 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
     //if we have ckit and stuff is damaged
     if (BG_InventoryContainsWeapon( WP_HBUILD, self->client->ps.stats)) {
                 
-        self->botMind->botTarget = &g_entities[tempEntityIndex];
+        self->botMind->target = &g_entities[tempEntityIndex];
 
         //change to ckit if we havent already
         if (self->client->ps.weapon != WP_HBUILD)
             G_ForceWeaponChange( self, WP_HBUILD );
             
         //use waypoints to try to get to target
-        if(self->botMind->botDest.ent != self->botMind->botTarget || self->botMind->botDest.ent == NULL) {
-            self->botMind->botDest.ent = self->botMind->botTarget;
-            VectorCopy(self->botMind->botTarget->s.origin, self->botMind->botDest.coord);
+        if(self->botMind->botDest.ent != self->botMind->target || self->botMind->botDest.ent == NULL) {
+            self->botMind->botDest.ent = self->botMind->target;
+            VectorCopy(self->botMind->target->s.origin, self->botMind->botDest.coord);
             findRouteToTarget(self, self->botMind->botDest.coord);
             setNewRoute(self);
         }
@@ -492,7 +492,7 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
                 setNewRoute(self);
             }
         }
-        if( botGetDistanceBetweenPlayer( self, self->botMind->botTarget ) <
+        if( botGetDistanceBetweenPlayer( self, self->botMind->target ) <
             100) {
             // If we are within the distance of the structure, than we
             // start directly with repairing
@@ -504,11 +504,11 @@ void Repair( gentity_t *self, usercmd_t *botCmdBuffer) {
 }
 void Heal( gentity_t *self, usercmd_t *botCmdBuffer) {
     int tempEntityIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
-    self->botMind->botTarget = &g_entities[tempEntityIndex];
+    self->botMind->target = &g_entities[tempEntityIndex];
      //use paths to try to get to target
-    if(self->botMind->botDest.ent != self->botMind->botTarget || self->botMind->botDest.ent == NULL) {
-            self->botMind->botDest.ent = self->botMind->botTarget;
-            VectorCopy(self->botMind->botTarget->s.pos.trBase, self->botMind->botDest.coord);
+    if(self->botMind->botDest.ent != self->botMind->target || self->botMind->botDest.ent == NULL) {
+            self->botMind->botDest.ent = self->botMind->target;
+            VectorCopy(self->botMind->target->s.pos.trBase, self->botMind->botDest.coord);
             findRouteToTarget(self, self->botMind->botDest.ent->s.pos.trBase);
             setNewRoute(self);
     }
@@ -522,7 +522,7 @@ void Heal( gentity_t *self, usercmd_t *botCmdBuffer) {
             setNewRoute(self);
         }
     }
-     if(botGetDistanceBetweenPlayer(self,self->botMind->botTarget) > 50) {
+     if(botGetDistanceBetweenPlayer(self,self->botMind->target) > 50) {
             G_BotMove(self, botCmdBuffer);
      }
 }
@@ -604,9 +604,9 @@ void G_BotSpectatorThink( gentity_t *self ) {
         return;
     }
 
-    //reset botMind->botMind->botEnemy to NULL if we can roam (for fallback reasons to old behavior)
+    //reset botMind->botMind->enemy to NULL if we can roam (for fallback reasons to old behavior)
     if(g_bot_roam.integer == 1)
-        self->botMind->botEnemy = NULL;
+        self->botMind->enemy = NULL;
     
     //reset everything else
     self->botMind->followingRoute = qfalse;
@@ -837,10 +837,10 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     vec3_t mins, maxs;
     vec3_t muzzle;
     
-    if(self->botMind->botEnemy)
-        target = self->botMind->botEnemy;
+    if(self->botMind->enemy)
+        target = self->botMind->enemy;
     else
-        target = self->botMind->botTarget;
+        target = self->botMind->target;
     
     BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ],
                        mins, maxs, NULL, NULL, NULL );

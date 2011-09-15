@@ -139,12 +139,12 @@ typedef struct
 typedef struct
 {
     //for targeting following
-    botCommand_t          botCommand;
-    gentity_t         *botEnemy;
-    gentity_t         *botTarget;
-    gentity_t         *botFriend;
-    int                           botFriendLastSeen;
-    int                           botEnemyLastSeen;
+    botCommand_t          command;
+    gentity_t         *enemy;
+    gentity_t         *target;
+    gentity_t         *friend;
+    int                           friendLastSeen;
+    int                           enemyLastSeen;
     int                           botTeam;
     int timeFoundEnemy;
     int spawnItem;

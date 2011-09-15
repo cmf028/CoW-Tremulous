@@ -179,17 +179,17 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
                 
                 
                 // buy the stuff the friend has
-                if(self->botMind->botFriend) {
-                    if( BG_InventoryContainsUpgrade( UP_JETPACK, self->botMind->botFriend->client->ps.stats ))
+                if(self->botMind->friend) {
+                    if( BG_InventoryContainsUpgrade( UP_JETPACK, self->botMind->friend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_JETPACK );
                     
-                    else if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->botMind->botFriend->client->ps.stats ))
+                    else if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->botMind->friend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_BATTLESUIT );
                     
-                    else if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->botMind->botFriend->client->ps.stats ) && random() <= 0.2)
+                    else if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->botMind->friend->client->ps.stats ) && random() <= 0.2)
                         G_BotBuyUpgrade( self, UP_LIGHTARMOUR);
                     
-                    else if( BG_InventoryContainsUpgrade( UP_HELMET, self->botMind->botFriend->client->ps.stats ))
+                    else if( BG_InventoryContainsUpgrade( UP_HELMET, self->botMind->friend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_HELMET);
                     
                 }
@@ -216,11 +216,11 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
             }
             
         } else if( botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) != -1 ) {
-            self->botMind->botTarget = &g_entities[botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE)];
+            self->botMind->target = &g_entities[botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE)];
             //use paths to try to get to target
-            if(self->botMind->botDest.ent != self->botMind->botTarget || self->botMind->botDest.ent == NULL) {
-                self->botMind->botDest.ent = self->botMind->botTarget;
-                VectorCopy(self->botMind->botTarget->s.pos.trBase, self->botMind->botDest.coord);
+            if(self->botMind->botDest.ent != self->botMind->target || self->botMind->botDest.ent == NULL) {
+                self->botMind->botDest.ent = self->botMind->target;
+                VectorCopy(self->botMind->target->s.pos.trBase, self->botMind->botDest.coord);
                 findRouteToTarget(self, self->botMind->botDest.coord);
                 setNewRoute(self);
             }
@@ -235,7 +235,7 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
                     setNewRoute(self);
                 }
             }
-            if(botGetDistanceBetweenPlayer(self,self->botMind->botTarget) > 100) {
+            if(botGetDistanceBetweenPlayer(self,self->botMind->target) > 100) {
                 G_BotMove(self, botCmdBuffer);
             }
             if(self->client->ps.weapon == WP_HBUILD)
