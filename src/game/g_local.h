@@ -149,7 +149,7 @@ typedef struct
     int timeFoundEnemy;
     int spawnItem;
     qboolean  isFireing;
-    vec_t *botDefensePoint;
+    vec_t *defensePoint;
     int                   targetNode;
     int                   timeFoundNode;
     int                   lastNodeID;

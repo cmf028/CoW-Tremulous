@@ -34,6 +34,8 @@
 //uncomment to enable debuging messages
 //#define BOT_DEBUG 1
 
+botMemory_t g_botMind[MAX_CLIENTS];
+
 void G_BotAdd( char *name, int team, int skill ) {
     int i;
     int clientNum;
@@ -62,6 +64,7 @@ void G_BotAdd( char *name, int team, int skill ) {
 
 
     //default bot data
+    bot->botMind = &g_botMind[clientNum];
     bot->botMind->command = BOT_AUTO;
     bot->botMind->friend = NULL;
     bot->botMind->enemy = NULL;
@@ -131,7 +134,7 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
         bot->botMind->command = BOT_IDLE;
     else if( !Q_stricmp( command, "defensive" ) ) {
         bot->botMind->command = BOT_DEFENSIVE;
-        bot->botMind->botDefensePoint = bot->s.pos.trBase;
+        bot->botMind->defensePoint = bot->s.pos.trBase;
     } else if( !Q_stricmp( command, "followattack" ) ) {
         bot->botMind->command = BOT_FOLLOW_FRIEND_ATTACK;
         bot->botMind->friend = master;
@@ -367,7 +370,7 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
                     botAttackIfTargetInRange(self,self->botMind->enemy, botCmdBuffer);
                     #ifdef BOT_DEBUG
                     trap_SendServerCommand(-1,va("print \"Current Target Node %d\n\"", self->botMind->targetNode));
-                    trap_SendServerCommand(-1,va("print \"botMind->botMind->targetInRange returns %d\n\"",(int)botMind->botMind->targetInRange(self, self->botMind->enemy)));
+                    trap_SendServerCommand(-1,va("print \"botTargetInRange returns %d\n\"",(int)botTargetInRange(self, self->botMind->enemy)));
                     #endif
             }
                 

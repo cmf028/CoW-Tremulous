@@ -354,8 +354,8 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
         inspectedBuilding = BG_FindBuildNumForEntityName( target->classname );
         if(target->s.eType == ET_BUILDABLE &&
            target->biteam == self->client->ps.stats[ STAT_PTEAM ] &&
-           target->health !=  BG_FindHealthForBuildable( inspectedBuilding ) &&
-           target->health > 0 ) {
+           target->health <  BG_FindHealthForBuildable( inspectedBuilding ) &&
+           target->health > 0 && target->spawned) {
             new_distance = botGetDistanceBetweenPlayer( self, target );
             if( new_distance < min_distance ) {
                 min_distance = new_distance;
