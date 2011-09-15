@@ -179,17 +179,17 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
                 
                 
                 // buy the stuff the friend has
-                if(self->botFriend) {
-                    if( BG_InventoryContainsUpgrade( UP_JETPACK, self->botFriend->client->ps.stats ))
+                if(self->botMind->botFriend) {
+                    if( BG_InventoryContainsUpgrade( UP_JETPACK, self->botMind->botFriend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_JETPACK );
                     
-                    else if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->botFriend->client->ps.stats ))
+                    else if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->botMind->botFriend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_BATTLESUIT );
                     
-                    else if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->botFriend->client->ps.stats ) && random() <= 0.2)
+                    else if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->botMind->botFriend->client->ps.stats ) && random() <= 0.2)
                         G_BotBuyUpgrade( self, UP_LIGHTARMOUR);
                     
-                    else if( BG_InventoryContainsUpgrade( UP_HELMET, self->botFriend->client->ps.stats ))
+                    else if( BG_InventoryContainsUpgrade( UP_HELMET, self->botMind->botFriend->client->ps.stats ))
                         G_BotBuyUpgrade( self, UP_HELMET);
                     
                 }
@@ -216,26 +216,26 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
             }
             
         } else if( botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) != -1 ) {
-            self->botTarget = &g_entities[botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE)];
+            self->botMind->botTarget = &g_entities[botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE)];
             //use paths to try to get to target
-            if(self->botDest.ent != self->botTarget || self->botDest.ent == NULL) {
-                self->botDest.ent = self->botTarget;
-                VectorCopy(self->botTarget->s.pos.trBase, self->botDest.coord);
-                findRouteToTarget(self, self->botDest.coord);
+            if(self->botMind->botDest.ent != self->botMind->botTarget || self->botMind->botDest.ent == NULL) {
+                self->botMind->botDest.ent = self->botMind->botTarget;
+                VectorCopy(self->botMind->botTarget->s.pos.trBase, self->botMind->botDest.coord);
+                findRouteToTarget(self, self->botMind->botDest.coord);
                 setNewRoute(self);
             }
             
             //have reached end of path, continue towards arm until reached
-            if( self->targetNode == -1) {
-                goToward(self, self->botDest.coord, botCmdBuffer);
+            if( self->botMind->targetNode == -1) {
+                goToward(self, self->botMind->botDest.coord, botCmdBuffer);
                 
                 //find and follow a new path if we get stuck
-                if(self->timeFoundNode + 10000 < level.time) {
-                    findRouteToTarget(self, self->botDest.ent->s.pos.trBase);
+                if(self->botMind->timeFoundNode + 10000 < level.time) {
+                    findRouteToTarget(self, self->botMind->botDest.ent->s.pos.trBase);
                     setNewRoute(self);
                 }
             }
-            if(botGetDistanceBetweenPlayer(self,self->botTarget) > 100) {
+            if(botGetDistanceBetweenPlayer(self,self->botMind->botTarget) > 100) {
                 G_BotMove(self, botCmdBuffer);
             }
             if(self->client->ps.weapon == WP_HBUILD)

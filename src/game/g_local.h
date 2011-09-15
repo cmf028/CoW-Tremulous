@@ -136,6 +136,31 @@ typedef struct
     float aimSlowness;
     float aimShake;
 } botSkill_t;
+typedef struct
+{
+    //for targeting following
+    botCommand_t          botCommand;
+    gentity_t         *botEnemy;
+    gentity_t         *botTarget;
+    gentity_t         *botFriend;
+    int                           botFriendLastSeen;
+    int                           botEnemyLastSeen;
+    int                           botTeam;
+    int timeFoundEnemy;
+    int spawnItem;
+    qboolean  isFireing;
+    vec_t *botDefensePoint;
+    int                   targetNode;
+    int                   timeFoundNode;
+    int                   lastNodeID;
+    botstate              state;
+    qboolean              followingRoute;
+    botdestination               botDest;
+    int routeToTarget[MAX_NODES];
+    int startNode;
+    int lastRouteSearch;
+    botSkill_t botSkill;
+} botMemory_t;
 //============================================================================
 
 struct gentity_s
@@ -249,33 +274,11 @@ struct gentity_s
 
   int               noise_index;
 
-  //for targeting following
-  botCommand_t		botCommand;
-  gentity_t         *botEnemy;
-  gentity_t         *botTarget;
-  gentity_t         *botFriend;
-  int				botFriendLastSeen;
-  int				botEnemyLastSeen;
-  int				botTeam;
-  int timeFoundEnemy;
-  int spawnItem;
-  int lastDodgeTime;
-  qboolean  isFireing;
-  vec_t *botDefensePoint;
-  int                   targetNode;
-  int                   timeFoundNode;
+  botMemory_t *botMind;
   int                   pathid;
   int                   movepathid;
   int                   discpathid;
-  int                   lastNodeID;
-  botstate              state;
-  qboolean              isblocked;
-  qboolean              followingRoute;
-  botdestination               botDest;
-  int routeToTarget[MAX_NODES];
-  int startNode;
-  int lastRouteSearch;
-  botSkill_t botSkill;
+  
 
   
 
