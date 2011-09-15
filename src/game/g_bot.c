@@ -166,7 +166,7 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
     if(self->botMind->enemy)
     distanceToEnemy = botGetDistanceBetweenPlayer(self,self->botMind->enemy);
     //prevent human bots from moving toward target while attacking buildables
-    //TODO: Refacter this to be much cleaner and less of a hack
+    //FIXME: Refacter this to be much cleaner and less of a hack
     if( self->botMind->enemy->s.eType != ET_BUILDABLE || 
         self->client->ps.stats[ STAT_PTEAM ] == PTE_ALIENS || 
         !botTargetInRange(self,self->botMind->enemy) ||
@@ -179,6 +179,8 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
             //self->botMind->command != BOT_DEFENSIVE)
         botCmdBuffer->forwardmove = 127;
 
+        //we are not targeting a node, but we are targetting an enemy, so dodge his attacks
+        //FIXME: this should be more clear
         if(self->botMind->state != TARGETNODE) {
             /*
             botCmdBuffer->rightmove = -100;
@@ -198,19 +200,13 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
                         botCmdBuffer->rightmove = 0;
         }
         
-        //try to get around the block
-        if(botPathIsBlocked(self)) {
-            
-            if((self->client->time10000 % 4000) > 2000)
-                botCmdBuffer->rightmove = 100;
-            else
-                botCmdBuffer->rightmove = -100;
-        }
-        
         self->client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
 
+        //try to get around the block
         if( botPathIsBlocked( self ) ) {
-            botCmdBuffer->upmove = 127;
+            botCmdBuffer->rightmove = getStrafeDirection(self);
+            if(botShouldJump(self))
+                botCmdBuffer->upmove = 127;
         }
         
         //need to periodically reset upmove to 0 for jump to work
@@ -227,6 +223,78 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
         }
         
     }
+}
+qboolean botShouldJump(gentity_t *self) {
+    trace_t trace;
+    gentity_t *traceEnt;
+    vec3_t mins,maxs;
+    vec3_t end;
+    vec3_t forward,right,up;
+    vec3_t muzzle;
+    
+    
+    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], mins, maxs, NULL, NULL, NULL);
+    
+    AngleVectors(self->client->ps.viewangles,forward,right,up);
+    CalcMuzzlePoint(self,forward,right,up,muzzle);
+    VectorMA(muzzle, 10, forward, end);
+    
+    trap_Trace(&trace, self->s.origin, mins, maxs, end, self->s.number,MASK_SHOT);
+    
+    traceEnt = &g_entities[trace.entityNum];
+    
+    if(traceEnt->s.eType == ET_BUILDABLE)
+        return qtrue;
+    else
+        return qfalse;
+
+}
+int getStrafeDirection(gentity_t *self) {
+    
+    trace_t traceRight,traceLeft;
+    
+    vec3_t startRight,startLeft;
+    vec3_t maxs;
+    vec3_t forward, right, up;
+    vec3_t muzzle;
+    vec3_t end;
+    
+    int strafe;
+    
+    BG_FindBBoxForClass( self->client->ps.stats[STAT_PCLASS], NULL, maxs, NULL, NULL, NULL);
+    AngleVectors( self->client->ps.viewangles, forward, right, up);
+    
+    CalcMuzzlePoint( self, forward, right, up , muzzle);
+    VectorMA(muzzle, 10, forward, end);
+    
+    VectorScale(right, maxs[1], right);
+    
+    VectorAdd( self->s.origin, right, startRight );
+    VectorSubtract( self->s.origin, right, startLeft );
+    
+    startRight[2] += self->client->ps.viewheight;
+    startLeft[2] += self->client->ps.viewheight;
+    
+    trap_Trace( &traceRight, startRight, NULL, NULL, end, self->s.number, MASK_SHOT );
+    trap_Trace( &traceLeft, startLeft, NULL, NULL, end, self->s.number, MASK_SHOT );
+    
+    if( traceRight.fraction == 1.0f && traceLeft.fraction != 1.0f ) {
+        strafe = 127;
+    } else if( traceRight.fraction != 1.0f && traceLeft.fraction == 1.0f ) {
+        strafe = -127;
+        
+        //we dont know which direction to strafe, so strafe randomly
+    } else {
+        if((self->client->time10000 % 4000) > 2000)
+            strafe = 127;
+        else
+            strafe = -127;
+        
+        //we are not blocked, so we dont need to strafe
+    }
+        
+    
+    return strafe;
 }
 
 void G_BotThink( gentity_t *self) {
@@ -850,10 +918,10 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     VectorMA( muzzle, 10, forward, end );
-    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_PLAYERSOLID );
+    trap_Trace( &trace, self->s.origin, mins, maxs, end, self->s.number, MASK_PLAYERSOLID );
     traceEnt = &g_entities[ trace.entityNum ];
     
-    if(trace.fraction < 1.0 && trace.entityNum != -1)
+    if(trace.fraction != 1.0f && trace.entityNum != ENTITYNUM_WORLD)
     {return qtrue;}
         else
     {return qfalse;}
