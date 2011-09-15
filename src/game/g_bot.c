@@ -346,11 +346,12 @@ void G_BotThink( gentity_t *self) {
         pathfinding(self, &botCmdBuffer);
     self->client->pers.cmd = botCmdBuffer;
 }
+//FIXME: this function is extreamly messy
 void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
     
     int tempEntityIndex = -1;
     vec3_t tmpVec;
-    //int clicksToStopChase = 30; //about 5 seconds
+
     //if out of ammo switch to blaster
     if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
@@ -369,46 +370,44 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
                 //trap_SendServerCommand(-1,va("print \"New Target Node %d\n\"", self->targetNode));
             }
              
-              // enemy!
+            // enemy!
             self->client->ps.pm_flags &= ~PMF_CROUCH_HELD;
             // gesture
             if(random() <= 0.1) botCmdBuffer->buttons |= BUTTON_GESTURE;
-            
-                if(self->targetNode == -1 || botTargetInRange(self, self->botEnemy)) {
+                
+            if(self->targetNode == -1 || botTargetInRange(self, self->botEnemy)) {
                     botGetAimLocation(self->botEnemy, &tmpVec);
                     goToward(self, tmpVec, botCmdBuffer);
                     botAttackIfTargetInRange(self,self->botEnemy, botCmdBuffer);
-                    //self->timeFoundNode = level.time;
                     #ifdef BOT_DEBUG
                     trap_SendServerCommand(-1,va("print \"Current Target Node %d\n\"", self->targetNode));
                     trap_SendServerCommand(-1,va("print \"botTargetInRange returns %d\n\"",(int)botTargetInRange(self, self->botEnemy)));
                     #endif
-                    //reset this to avoid problems with the node timeouts (bots stuck between 2 nodes
-                }
-            
-            // we already have an enemy. See if still in LOS or radar range for aliens
+            }
+                
+                // we already have an enemy. See if still in LOS or radar range for aliens
             if((!botTargetInRange(self,self->botEnemy) &&
-                self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) ||
-                (Distance(self->s.pos.trBase, self->botEnemy->s.pos.trBase) > ALIENSENSE_RANGE &&
+            self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) ||
+            (Distance(self->s.pos.trBase, self->botEnemy->s.pos.trBase) > ALIENSENSE_RANGE &&
                 self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS))
             {
-                // if it's been over the maxium enemy chase time since we last saw him in LOS or radar then do nothing, else follow him!
+                    // if it's been over the maxium enemy chase time since we last saw him in LOS or radar then do nothing, else follow him!
                 if(self->botEnemyLastSeen + BOT_ENEMY_CHASETIME < level.time) {
                     // forget him!
                     self->botEnemy = NULL;
                     self->botEnemyLastSeen = 0;
                     self->followingRoute = qfalse;
                 } 
-                
-                
-                
+                        
+                    
+                    
             } else {
-                self->botEnemyLastSeen = level.time;
-                #ifdef BOT_DEBUG
-                trap_SendServerCommand(-1,va("print \"BotEnemylastSeen: %d\n\"", self->botEnemyLastSeen));
-                #endif
+                    self->botEnemyLastSeen = level.time;
+                    #ifdef BOT_DEBUG
+                    trap_SendServerCommand(-1,va("print \"BotEnemylastSeen: %d\n\"", self->botEnemyLastSeen));
+                    #endif
             }
-                G_BotMove( self, botCmdBuffer );
+            G_BotMove( self, botCmdBuffer );
         }
         if(!self->botEnemy) {
             // try to find closest enemy
@@ -866,13 +865,7 @@ qboolean botPathIsBlocked( gentity_t *self ) {
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     VectorMA( muzzle, 10, forward, end );
-    //save bandwidth
-    VectorScale(mins, 0.8, mins);
-    VectorScale(maxs,0.8, maxs);
-    SnapVector(end);
-    SnapVector(mins);
-    SnapVector(maxs);
-    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_SHOT );
+    trap_Trace( &trace, muzzle, mins, maxs, end, self->s.number, MASK_PLAYERSOLID );
     traceEnt = &g_entities[ trace.entityNum ];
     
     if(trace.fraction < 1.0 && trace.entityNum != -1)
