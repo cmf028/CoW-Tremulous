@@ -359,9 +359,8 @@ void Attack(gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer) {
         if(self->botEnemy) {
                 //dont remove the botTargetInRange check, otherwise there will be massive ammounts of lag as everyone
                 // needlessly keeps finding new routes whenever the enemy is in range
-                //the botEnemyLastSeen check is to help with the erratic aiming when enemy reapeatedly goes in/out of view
             if((self->botDest.ent != self->botEnemy || self->botDest.ent == NULL || !self->followingRoute) &&
-            !botTargetInRange(self, self->botEnemy) && (self->botEnemyLastSeen + 500 < level.time || self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS)) {
+            !botTargetInRange(self, self->botEnemy)) {
                 //put the assainments in GoToward
                 self->botDest.ent = self->botEnemy;
                 VectorCopy(self->botEnemy->s.pos.trBase, self->botDest.coord);
@@ -976,12 +975,9 @@ qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target, usercmd_t
 qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
     trace_t trace;
     gentity_t *traceEnt;
-    float width;
-    float range;
-    vec3_t    mins, maxs;
     vec3_t  muzzle;
     vec3_t  forward, right, up;
-    vec3_t targetBase;
+    
     if( !self || !target )
         return qfalse;
 
@@ -998,16 +994,14 @@ qboolean botTargetInRange( gentity_t *self, gentity_t *target ) {
     AngleVectors( self->client->ps.viewangles, forward, right, up );
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
-    getWeaponAttributes( self, &range, &width);
-    VectorCopy(target->s.pos.trBase, targetBase);
-    SnapVector(targetBase);
+    //getWeaponAttributes( self, &range, &width);
     
-    if(width > 0) {
+    /*if(width > 0) {
             VectorSet( mins, -width, -width, -width );
             VectorSet( maxs, width, width, width );
-            trap_Trace( &trace, muzzle, mins, maxs, targetBase, self->s.number, MASK_SHOT );
-    } else
-        trap_Trace( &trace, muzzle, NULL, NULL, targetBase, self->s.number, MASK_SHOT );
+            trap_Trace( &trace, muzzle, mins, maxs, target->s.origin, self->s.number, MASK_SHOT );
+    } else*/
+    trap_Trace( &trace, muzzle, NULL, NULL, target->s.origin, self->s.number, MASK_SHOT );
 
     
 
@@ -1183,10 +1177,9 @@ int findClosestNode( vec3_t start )
         int closestNode = 0;
         float closestNodeDistance = Square(2000);
         qboolean nodeFound = qfalse;
-        CONTENTS_BODY;
         for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
         {
-                trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_PLAYERSOLID );
+                trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
                 if( trace.fraction < 1.0 )
                 {continue;}
                 //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here)
@@ -1475,7 +1468,7 @@ void findRouteToTarget( gentity_t *self, vec3_t dest ) {
             VectorScale(mins,.5,mins);
             
             //do a trace to the second node in the route to see if we can skip the first (and thus not backtrack if we were going to)
-            trap_Trace( &trace, start, mins, maxs, level.nodes[self->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT );
+            trap_Trace( &trace, start, mins, maxs, level.nodes[self->routeToTarget[startNum]].coord, self->s.number, MASK_PLAYERSOLID );
             
             //we can get to that node
             if(trace.fraction == 1) 
