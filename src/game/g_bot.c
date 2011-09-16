@@ -223,7 +223,6 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
         }
         
     }
-    trap_SendServerCommand(-1,va("print \"Current forward velocity %f\n\"", self->client->ps.velocity[1]));
 }
 qboolean botShouldJump(gentity_t *self) {
     trace_t trace;
