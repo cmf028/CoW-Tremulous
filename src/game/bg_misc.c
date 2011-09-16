@@ -5149,8 +5149,8 @@ qboolean BG_WeaponIsEmpty( weapon_t weapon, int psAmmo[ ], int psAmmo2[ ] )
 {
     int ammo, clips;
     int maxAmmo, maxClips;
-    BG_FindAmmoForWeapon( weapon, &maxAmmo, &maxClips);
-    if (maxAmmo != 0 && maxClips != 0) {
+    
+    if (!BG_FindInfinteAmmoForWeapon(weapon)) {
         BG_UnpackAmmoArray( weapon, psAmmo, psAmmo2, &ammo, &clips );
         
         return ( ammo == 0 ) && ( clips == 0 );
@@ -5163,7 +5163,7 @@ float BG_FindPercentAmmo( weapon_t weapon, int stats[], int psAmmo[], int psAmmo
     float totalMaxAmmo, totalAmmo;
     
     BG_FindAmmoForWeapon( weapon, &maxAmmo, &maxClips );
-    if(maxAmmo != 0 && maxClips != 0) {
+    if(!BG_FindInfinteAmmoForWeapon(weapon)) {
         BG_UnpackAmmoArray( weapon, psAmmo, psAmmo2, &ammo, &clips );
         if( BG_InventoryContainsUpgrade( UP_BATTPACK, stats ) )
             maxAmmo = (int)( (float)maxAmmo * BATTPACK_MODIFIER );
