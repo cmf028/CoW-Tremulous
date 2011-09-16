@@ -91,7 +91,7 @@ qboolean botShouldJump(gentity_t *self);
 #define BOT_USEMEDKIT_HP 30
 
 //when human bots reach this ammo percentage left or less(and no enemy), they will head back to the base to refuel ammo when in range of arm as defined by BOT_ARM_RANGE
-#define BOT_LOW_AMMO 25
+#define BOT_LOW_AMMO 0.25f
 
 //when human bots reach this health or below (and no medkit/enemy) they will head back to the base to heal when in range of medi as defined by BOT_MEDI_RANGE
 #define BOT_LOW_HP 100

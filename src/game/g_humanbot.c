@@ -367,6 +367,19 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
 }
 
 qboolean botWeaponHasLowAmmo(gentity_t *self) {
-    return BG_FindPercentAmmo(self->client->ps.weapon, self->client->ps.stats,self->client->ps.ammo,self->client->ps.powerups) < BOT_LOW_AMMO / 100;
+    int i;
+    
+    //find our primary weapon
+    for( i = WP_NONE + 1; i < WP_NUM_WEAPONS; i++ )
+    {
+        if( i == WP_BLASTER )
+            continue;
+        
+        if( BG_InventoryContainsWeapon( i, self->client->ps.stats ) )
+        {
+            return BG_FindPercentAmmo(i, self->client->ps.stats,self->client->ps.ammo,self->client->ps.powerups) < BOT_LOW_AMMO;
+        }
+    }
+    return qtrue;
 }
 

@@ -5169,7 +5169,7 @@ float BG_FindPercentAmmo( weapon_t weapon, int stats[], int psAmmo[], int psAmmo
             maxAmmo = (int)( (float)maxAmmo * BATTPACK_MODIFIER );
         
         totalMaxAmmo = (float) maxAmmo + maxClips * maxAmmo;
-        totalAmmo = (float) ammo + maxClips * maxAmmo;
+        totalAmmo = (float) ammo + clips * maxAmmo;
         
         return (float) totalAmmo / totalMaxAmmo;
     } else 

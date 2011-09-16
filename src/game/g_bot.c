@@ -364,7 +364,6 @@ void G_BotThink( gentity_t *self) {
             //buy mode
             else if( ( ( (short)self->client->ps.persistant[ PERS_CREDIT ] > 70 && 
                 !BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->client->ps.stats ) ) ||
-                self->client->ps.weapon == WP_BLASTER || 
                 botWeaponHasLowAmmo(self) ) && 
                 self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS &&
                 botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) != -1 &&
