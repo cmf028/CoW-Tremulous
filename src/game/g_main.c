@@ -1090,7 +1090,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
   trap_Cvar_Set( "g_humanKills", 0 );
   trap_Cvar_Set( "g_suddenDeath", 0 );
   level.suddenDeathBeginTime = g_suddenDeathTime.integer * 60000;
-  level.lastWaveTime = 0;
+  level.lastWaveTime = level.startTime;
   level.currentWave = 0;
 
   G_Printf( "-----------------------------------\n" );
@@ -1814,31 +1814,39 @@ void G_CalculateWaves( void ) {
                 case 1: trap_Cvar_Set("g_bot_evolve","1");
                         trap_Cvar_Set("g_bot_buy","1");
                         trap_Cvar_Set("g_bot_dretch","1");
+                        
                         break;
                 case 2: trap_Cvar_Set("g_bot_basi","1");
                         trap_Cvar_Set("g_bot_rifle","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^32"));
                         break;
                 case 3:
                         trap_Cvar_Set("g_bot_advbasi","1");
                         trap_Cvar_Set("g_bot_las","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^33"));
                         break;
                 case 4:
                         trap_Cvar_Set("g_bot_mara","1");
                         trap_Cvar_Set("g_bot_mass","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^34"));
                         break;
                 case 5:
                         trap_Cvar_Set("g_bot_advmara","1");
                         trap_Cvar_Set("g_bot_chain","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^35"));
                         break;
                 case 6:
                         trap_Cvar_Set("g_bot_goon","1");
                         trap_Cvar_Set("g_bot_pulse","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^36"));
                         break;
                 case 7: trap_Cvar_Set("g_bot_advgoon","1");
                         trap_Cvar_Set("g_bot_flamer","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^37"));
                         break;
                 case 8: trap_Cvar_Set("g_bot_tyrant","1");
                         trap_Cvar_Set("g_bot_luci","1");
+                        trap_SendConsoleCommand( EXEC_APPEND, va("!cp %s\n", "Wave ^38"));
                         break;
             }
         }
