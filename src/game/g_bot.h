@@ -65,6 +65,8 @@ qboolean botWeaponHasLowAmmo(gentity_t *self);
 void setSkill(gentity_t *self, int skill);
 int getStrafeDirection(gentity_t *self);
 qboolean botShouldJump(gentity_t *self);
+qboolean botNeedsItem(gentity_t *self);
+qboolean botCanShop(gentity_t *self);
 
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h

@@ -360,19 +360,13 @@ void G_BotThink( gentity_t *self) {
                 botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE) != -1 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
                 Heal(self, &botCmdBuffer);
             
-            //TODO: clean this up and make it better by introducing botCanPurchaseNewItem
             //buy mode
-            else if( ( ( (short)self->client->ps.persistant[ PERS_CREDIT ] > 70 && 
-                !BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->client->ps.stats ) ) ||
-                botWeaponHasLowAmmo(self) ) && 
-                self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS &&
-                botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) != -1 &&
-                g_bot_buy.integer == 1 )
+            else if( botCanShop(self) && botNeedsItem(self) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
                 Buy(self, &botCmdBuffer);
             else {
                 //reset stuff to begin roaming the map
                 self->botMind->botDest.ent = NULL;
-                if(self->botMind->state == LOST || self->botMind->state == TARGETOBJECTIVE)
+                if(self->botMind->state != TARGETNODE && self->botMind->state != FINDNEXTNODE && self->botMind->state != FINDNEWNODE)
                     self->botMind->state = FINDNEWNODE;
                 self->botMind->followingRoute = qfalse;
             }

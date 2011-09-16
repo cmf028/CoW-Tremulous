@@ -382,4 +382,35 @@ qboolean botWeaponHasLowAmmo(gentity_t *self) {
     }
     return qtrue;
 }
+qboolean botNeedsItem(gentity_t *self) {
+    
+    //we need more ammo
+    if(botWeaponHasLowAmmo(self))
+        return qtrue;
+    
+    //see if we can afford lightarmor and we dont have any on currently
+    if(g_humanStage.integer == S1 || g_humanStage.integer == S2 || g_humanStage.integer == S3) {
+        
+        //100 is the highest minimum amount of credits needed to buy something new
+        if((short) self->client->ps.persistant[PERS_CREDIT] > BG_FindPriceForUpgrade(UP_LIGHTARMOUR) && 
+        !BG_InventoryContainsUpgrade(UP_LIGHTARMOUR, self->client->ps.stats))
+            return qtrue;
+    }
+    //see if we can afford a helmet and we dont have any on currently
+    if(g_humanStage.integer == S2 || g_humanStage.integer == S3) {
+        if((short) self->client->ps.persistant[PERS_CREDIT] > BG_FindPriceForUpgrade(UP_HELMET) &&
+        !BG_InventoryContainsUpgrade(UP_HELMET, self->client->ps.stats))
+            return qtrue;
+    }
+    return qfalse;
+}
+qboolean botCanShop(gentity_t *self) {
+    //if no powered armoury in range
+    if(botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) == -1)
+        return qfalse;
+    //bot buying is disabled
+    if(g_bot_buy.integer == 0)
+        return qfalse;
+    return qtrue;
+}
 
