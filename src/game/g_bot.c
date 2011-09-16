@@ -202,8 +202,8 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
         
         self->client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
 
-        //try to get around the block
-        if( botPathIsBlocked( self ) ) {
+        //we have stopped moving forward, try to get around whatever is blocking us
+        if( self->client->ps.velocity[1] == 0.0f ) {
             botCmdBuffer->rightmove = getStrafeDirection(self);
             if(botShouldJump(self))
                 botCmdBuffer->upmove = 127;
@@ -223,6 +223,7 @@ void G_BotMove(gentity_t *self, usercmd_t *botCmdBuffer)
         }
         
     }
+    trap_SendServerCommand(-1,va("print \"Current forward velocity %f\n\"", self->client->ps.velocity[1]));
 }
 qboolean botShouldJump(gentity_t *self) {
     trace_t trace;
