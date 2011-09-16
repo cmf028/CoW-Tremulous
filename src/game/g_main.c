@@ -1091,7 +1091,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
   trap_Cvar_Set( "g_suddenDeath", 0 );
   level.suddenDeathBeginTime = g_suddenDeathTime.integer * 60000;
   level.lastWaveTime = level.startTime;
-  level.currentWave = 0;
+  level.currentWave = 1;
 
   G_Printf( "-----------------------------------\n" );
 
