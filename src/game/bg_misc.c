@@ -5148,7 +5148,6 @@ qboolean BG_WeaponIsFull( weapon_t weapon, int stats[ ], int psAmmo[ ], int psAm
 qboolean BG_WeaponIsEmpty( weapon_t weapon, int psAmmo[ ], int psAmmo2[ ] )
 {
     int ammo, clips;
-    int maxAmmo, maxClips;
     
     if (!BG_FindInfinteAmmoForWeapon(weapon)) {
         BG_UnpackAmmoArray( weapon, psAmmo, psAmmo2, &ammo, &clips );
