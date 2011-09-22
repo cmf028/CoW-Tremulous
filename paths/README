@@ -1,0 +1,8 @@
+There are some example paths what I was created and using.
+You can create your owns with the command /node. 
+
+
+Warning: in Linux using gamex86.so it is case sensitive so if you call: !map UnCreation
+it will not get the path "uncreation" instead it will use a new one called "UnCreation".
+
+You are advised!
