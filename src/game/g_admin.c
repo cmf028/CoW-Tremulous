@@ -2593,17 +2593,17 @@ qboolean G_admin_loadrotation(gentity_t *ent, int skiparg) {
     char rotationName[MAX_NAME_LENGTH];
     char strBuf[MAX_NAME_LENGTH];
     int i;
-    int n;
     
+    //-1, yea I know, but only way around bug....
+    strBuf[0] = '-';
+    strBuf[1] = '1';
     G_SayArgv( 1 + skiparg, rotationName, sizeof( rotationName) );
     
     for(i=0;i<mapRotations.numRotations;i++) {
         if(!Q_stricmp(mapRotations.rotations[i].name,rotationName)) {
-            
-            for(n=0;n<i;n++)
-                Q_strcat(strBuf,sizeof(strBuf),"0 ");
-            
-            Q_strcat(strBuf,sizeof(strBuf),"-1");
+        
+    
+            //Q_strcat(strBuf,sizeof(strBuf),"-1");
             trap_Cvar_Set("g_currentMapRotation", va("%d",i));
             trap_Cvar_Set("g_currentmap", strBuf );
             level.lastWin = PTE_NONE;
@@ -2618,7 +2618,11 @@ qboolean G_admin_loadrotation(gentity_t *ent, int skiparg) {
                          G_admin_maplog_result( "N" );
             return qtrue;
         }
-            
+        //work around bug I cant figure out
+        //if(i==0)
+            //strBuf = "0";
+        //else    
+            Q_strcat(strBuf,sizeof(strBuf),"-1 ");
     }
     ADMP( va( "^3!loadrotation: ^7invalid rotation name \'%s\'\n", rotationName) );
     
