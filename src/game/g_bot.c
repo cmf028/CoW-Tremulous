@@ -942,7 +942,7 @@ qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target, usercmd_t
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
                     break;
                 case PCL_ALIEN_LEVEL1_UPG:
-                    if (random() > 0.5)
+                    if (random() > 0.8)
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //gas
                     else if(botWillHitEnemy( self, target ))
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
