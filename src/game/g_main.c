@@ -833,18 +833,6 @@ void G_MapConfigs( const char *mapname )
 
   trap_Cvar_Set( "g_mapConfigsLoaded", "1" );
 }
-int distanceBetweenNodes( node node1, node node2 )
-{
-        int distance,Ax,Ay,Az,Bx,By,Bz = 0;
-        Ax = node1.coord[0];
-        Ay = node1.coord[1];
-        Az = node1.coord[2];
-        Bx = node2.coord[0];
-        By = node2.coord[1];
-        Bz = node2.coord[2];
-        distance = sqrt((Ax - Bx)*(Ax - Bx) + (Ay - By)*(Ay - By) + (Az - Bz)*(Az - Bz));
-        return distance;
-}
 /*
 ============
 G_PathLoad
@@ -925,17 +913,17 @@ void G_PathLoad( void )
         //generate a lookup table of the distances between connected nodes when the map starts
         //saves CPU during gameplay (distances are used for route finding)
         for(i=0;i<MAX_NODES;i++) {
-        for(k=0;k<MAX_NODES;k++) {
-            for(n=0;n<5;n++){
-                if(level.nodes[i].nextid[n] == k) {
-                    level.distNode[i][k] = (int) Distance(level.nodes[i].coord,level.nodes[k].coord);
-                    n=5;
+            for(k=0;k<MAX_NODES;k++) {
+                for(n=0;n<5;n++){
+                    if(level.nodes[i].nextid[n] == k) {
+                        level.distNode[i][k] = (int) Distance(level.nodes[i].coord,level.nodes[k].coord);
+                        n=5;
+                    }
+                    else
+                        level.distNode[i][k] = 999999999; //make distance huge to make route finding algorithm not use it
                 }
-                else
-                    level.distNode[i][k] = 999999999; //make distance huge to make route finding algorithm not use it
             }
         }
-    }
         G_Printf( va("Loaded %d nodes\n", level.numNodes) );
 }
 

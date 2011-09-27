@@ -31,6 +31,7 @@ typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
 #include "g_admin.h"
+#include "../tools/lcc/src/c.h"
 
 //==================================================================
 
@@ -96,6 +97,17 @@ typedef enum
   BOT_AUTO
 } botCommand_t;
 
+typedef enum
+{
+    ATTACK,
+    BUILD,
+    BUY,
+    HEAL,
+    REPAIR,
+    ROAM
+    
+} botModus_t;
+
 typedef struct
 {
         vec3_t  coord;
@@ -107,12 +119,6 @@ typedef struct
 
 typedef enum
 {
-        ATTACK,
-        FOLLOW,
-        REPAIR,
-        HEAL,
-        ROAM,
-        IDLE,
         
         //path states
         FINDNEWNODE,
@@ -129,7 +135,7 @@ typedef struct
 {
     gentity_t *ent;
     vec3_t coord;
-}botdestination;
+}botTarget_t;
 typedef struct
 {
     int level;
@@ -150,16 +156,18 @@ typedef struct
     int spawnItem;
     qboolean  isFireing;
     vec_t *defensePoint;
-    int                   targetNode;
+    int                   targetNodeID;
     int                   timeFoundNode;
     int                   lastNodeID;
     botstate              state;
     qboolean              followingRoute;
-    botdestination               botDest;
+    botTarget_t           targetNode;
+    botTarget_t           goal;
     int routeToTarget[MAX_NODES];
-    int startNode;
+    int startNodeID;
     int lastRouteSearch;
     botSkill_t botSkill;
+    botModus_t currentModus;
 } botMemory_t;
 //============================================================================
 

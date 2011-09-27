@@ -243,78 +243,6 @@ void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
         }
     }
 }
-int botFindArmoury(gentity_t *self) {
-    // The range of our scanning field.
-    int vectorRange = MGTURRET_RANGE * 5;
-    // vectorRange converted to a vector
-    vec3_t range;
-    // Lower bound vector
-    vec3_t mins;
-    // Upper bound vector
-    vec3_t maxs;
-    // Indexing field
-    int total_entities;
-    int entityList[ MAX_GENTITIES ];
-    int i;
-    int min_distance = MGTURRET_RANGE * 5;
-    int closest_arm = -1;
-    int new_distance;
-    gentity_t *target;
-    VectorSet( range, vectorRange, vectorRange, vectorRange );
-    VectorAdd( self->client->ps.origin, range, maxs );
-    VectorSubtract( self->client->ps.origin, range, mins );
-    total_entities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
-    for( i = 0; i < total_entities; ++i )
-    {
-        target = &g_entities[entityList[ i ] ];
-
-        if( target->s.eType == ET_BUILDABLE && target->s.modelindex == BA_H_ARMOURY && target->powered) {
-            new_distance = botGetDistanceBetweenPlayer( self, target );
-            if( new_distance < min_distance ) {
-                min_distance = new_distance;
-                closest_arm = entityList[i];
-            }
-        }
-
-    }
-        return closest_arm;
-}
-int botFindMedistat(gentity_t *self) {
-    // The range of our scanning field.
-    int vectorRange = MGTURRET_RANGE * 5;
-    // vectorRange converted to a vector
-    vec3_t range;
-    // Lower bound vector
-    vec3_t mins;
-    // Upper bound vector
-    vec3_t maxs;
-    // Indexing field
-    int total_entities;
-    int entityList[ MAX_GENTITIES ];
-    int i;
-    int min_distance = MGTURRET_RANGE * 5;
-    int new_distance;
-    int closest_medi = -1;
-    gentity_t *target;
-    VectorSet( range, vectorRange, vectorRange, vectorRange );
-    VectorAdd( self->client->ps.origin, range, maxs );
-    VectorSubtract( self->client->ps.origin, range, mins );
-    total_entities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
-    for( i = 0; i < total_entities; ++i )
-    {
-        target = &g_entities[entityList[ i ] ];
-
-        if( target->s.eType == ET_BUILDABLE && target->s.modelindex == BA_H_MEDISTAT && target->powered) {
-            new_distance = botGetDistanceBetweenPlayer( self, target );
-            if( new_distance < min_distance ) {
-                min_distance = new_distance;
-                closest_medi = entityList[i];
-            }
-        }
-
-    }
-        return closest_medi;
-}
 int botFindDamagedFriendlyStructure( gentity_t *self )
 {
     // The range of our scanning field.
@@ -364,6 +292,31 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
         }
     }
     return nearest_dmged_building;
+}
+qboolean botStructureIsDamaged(int team)
+{
+    // Indexing field
+    int i;
+    // Temporary entitiy
+    gentity_t *target;
+    // Temporary buildable
+    buildable_t inspectedBuilding;
+    
+    // Fetch all entities and iterate over them
+    // to locate the structures that belong to the team and that
+    // are not at full health.
+    for( i = 0; i < level.num_entities; ++i )
+    {
+        target = &g_entities[i];
+        inspectedBuilding = BG_FindBuildNumForEntityName( target->classname );
+        if(target->s.eType == ET_BUILDABLE &&
+            target->biteam == team &&
+            target->health <  BG_FindHealthForBuildable( inspectedBuilding ) &&
+            target->health > 0 && target->spawned) {
+            return qtrue;
+        }
+    }
+    return qfalse;
 }
 
 qboolean botWeaponHasLowAmmo(gentity_t *self) {

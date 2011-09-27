@@ -33,8 +33,6 @@ void G_BotAlienThink( gentity_t *self );
 void G_BotHumanThink( gentity_t *self );
 void botAimAtTarget( gentity_t *self, vec3_t target , usercmd_t *rAngles);
 int botFindDamagedFriendlyStructure( gentity_t *self );
-int botFindMedistat( gentity_t *self );
-int botFindArmoury( gentity_t *self );
 int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
 qboolean botWillHitEnemy( gentity_t *self, gentity_t *target );
 int botGetDistanceBetweenPlayer( gentity_t *self, gentity_t *player );
@@ -67,6 +65,7 @@ int getStrafeDirection(gentity_t *self);
 qboolean botShouldJump(gentity_t *self);
 qboolean botNeedsItem(gentity_t *self);
 qboolean botCanShop(gentity_t *self);
+qboolean botStructureIsDamaged(int team);
 
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
