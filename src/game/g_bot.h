@@ -66,7 +66,7 @@ qboolean botShouldJump(gentity_t *self);
 qboolean botNeedsItem(gentity_t *self);
 qboolean botCanShop(gentity_t *self);
 qboolean botStructureIsDamaged(int team);
-
+qboolean G_BotBuyWeapon(self, int weapon);
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
 

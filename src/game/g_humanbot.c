@@ -62,7 +62,7 @@ int G_BotBuyUpgrade ( gentity_t *ent, int upgrade )
 
     return 1;
 }
-int G_BotBuy ( gentity_t *ent, int weapon )
+int G_BotBuyWeapon ( gentity_t *ent, int weapon )
 {
     int maxAmmo, maxClips;
 
@@ -147,102 +147,7 @@ int G_BotBuy ( gentity_t *ent, int weapon )
     return 1;
 
 }
-void Buy( gentity_t *self, usercmd_t *botCmdBuffer )
-{
-    int i;
-    // if bot buying is enabled
-    if(g_bot_buy.integer > 0) {
-        // armoury in range
-        if(G_BuildableRange( self->client->ps.origin, 100, BA_H_ARMOURY) && 
-            self->client->ps.weapon != WP_HBUILD && 
-            self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS &&
-            self->client->time10000 % 2000 == 0 ) {
 
-            if((short)self->client->ps.persistant[ PERS_CREDIT ] > 0 || self->client->ps.weapon == WP_BLASTER) {
-                
-                // sell current weapon
-                for( i = WP_NONE + 1; i < WP_NUM_WEAPONS; i++ )
-                {
-                    if( BG_InventoryContainsWeapon( i, self->client->ps.stats ) &&
-                        BG_FindPurchasableForWeapon( i ) )
-                    {
-                        BG_RemoveWeaponFromInventory( i, self->client->ps.stats );
-                        
-                        //add to funds
-                        G_AddCreditToClient( self->client, (short)BG_FindPriceForWeapon( i ), qfalse );
-                    }
-                    
-                    //if we have this weapon selected, force a new selection
-                    if( i == self->client->ps.weapon )
-                        G_ForceWeaponChange( self, WP_NONE );
-                }
-                
-                
-                // buy the stuff the friend has
-                if(self->botMind->friend) {
-                    if( BG_InventoryContainsUpgrade( UP_JETPACK, self->botMind->friend->client->ps.stats ))
-                        G_BotBuyUpgrade( self, UP_JETPACK );
-                    
-                    else if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->botMind->friend->client->ps.stats ))
-                        G_BotBuyUpgrade( self, UP_BATTLESUIT );
-                    
-                    else if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, self->botMind->friend->client->ps.stats ) && random() <= 0.2)
-                        G_BotBuyUpgrade( self, UP_LIGHTARMOUR);
-                    
-                    else if( BG_InventoryContainsUpgrade( UP_HELMET, self->botMind->friend->client->ps.stats ))
-                        G_BotBuyUpgrade( self, UP_HELMET);
-                    
-                }
-                G_BotBuyUpgrade( self, UP_HELMET);
-                G_BotBuyUpgrade( self, UP_LIGHTARMOUR);
-                
-                // buy most expensive first, then one cheaper, etc, dirty but working way
-                if( !G_BotBuy( self, WP_LUCIFER_CANNON ) )
-                    if( !G_BotBuy( self, WP_FLAMER ) )
-                        if( !G_BotBuy( self, WP_PULSE_RIFLE ) )
-                            if( !G_BotBuy( self, WP_CHAINGUN ) )
-                                if( !G_BotBuy( self, WP_MASS_DRIVER ) )
-                                    if( !G_BotBuy( self, WP_LAS_GUN ) )
-                                        if( !G_BotBuy( self, WP_SHOTGUN ) )
-                                            if( !G_BotBuy( self, WP_PAIN_SAW ) )
-                                                G_BotBuy( self, WP_MACHINEGUN );
-            }
-            
-            
-            if( BG_FindUsesEnergyForWeapon( self->client->ps.weapon )) {
-                G_BotBuyUpgrade( self, UP_BATTPACK );
-            }else {
-                G_BotBuyUpgrade( self, UP_AMMO );
-            }
-            
-        } else if( botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE) != -1 ) {
-            self->botMind->target = &g_entities[botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE)];
-            //use paths to try to get to target
-            if(self->botMind->botDest.ent != self->botMind->target || self->botMind->botDest.ent == NULL) {
-                self->botMind->botDest.ent = self->botMind->target;
-                VectorCopy(self->botMind->target->s.pos.trBase, self->botMind->botDest.coord);
-                findRouteToTarget(self, self->botMind->botDest.coord);
-                setNewRoute(self);
-            }
-            
-            //have reached end of path, continue towards arm until reached
-            if( self->botMind->targetNode == -1) {
-                goToward(self, self->botMind->botDest.coord, botCmdBuffer);
-                
-                //find and follow a new path if we get stuck
-                if(self->botMind->timeFoundNode + 10000 < level.time) {
-                    findRouteToTarget(self, self->botMind->botDest.ent->s.pos.trBase);
-                    setNewRoute(self);
-                }
-            }
-            if(botGetDistanceBetweenPlayer(self,self->botMind->target) > 100) {
-                G_BotMove(self, botCmdBuffer);
-            }
-            if(self->client->ps.weapon == WP_HBUILD)
-                G_ForceWeaponChange(self, WP_BLASTER);
-        }
-    }
-}
 int botFindDamagedFriendlyStructure( gentity_t *self )
 {
     // The range of our scanning field.
@@ -262,7 +167,7 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
     // Array which contains the located entities
     int entityList[ MAX_GENTITIES ];
     int min_distance = MGTURRET_RANGE * 5;
-    int nearest_dmged_building = -1;
+    int nearest_dmged_building = ENTITYNUM_NONE;
     // Temporary entitiy
     gentity_t *target;
     // Temporary buildable

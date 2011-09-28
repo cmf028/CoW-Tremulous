@@ -285,7 +285,7 @@ void G_BotModusManager( gentity_t *self ) {
     } else if(medistatIndex != getTargetEntityNumber(self->botMind->goal) && medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats)) {
         self->botMind->currentModus = HEAL;
         setGoalEntity(self, &g_entities[medistatIndex]);
-    } else if(armouryIndex != getTargetEntityNumber(self->botMind->goal) && armouryIndex != ENTITYNUM_NONE && botCanShop(self)) {
+    } else if(armouryIndex != getTargetEntityNumber(self->botMind->goal) && armouryIndex != ENTITYNUM_NONE && botNeedsItem(self)) {
         self->botMind->currentModus = BUY;
         setGoalEntity(self, &g_entities[armouryIndex]);
     } else {
@@ -480,7 +480,7 @@ void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
     if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self, self->botMind->goal) ) {
         self->botMind->followingRoute = qfalse;
         botFireWeapon( self, botCmdBuffer );
-    } else 
+    } else
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
 }
 /**
@@ -494,6 +494,49 @@ void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
     if(DistanceSquared(self->s.origin, getTargetPos(self->botMind->goal)) > MEDISTAT_RANGE)
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     
+}
+void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
+    if(DistanceSquared(self->s.pos.trBase, getTargetPos(self->botMind->goal)) > Square(100))
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
+    else {
+        // sell current weapon
+        for( i = WP_NONE + 1; i < WP_NUM_WEAPONS; i++ )
+        {
+            if( BG_InventoryContainsWeapon( i, self->client->ps.stats ) &&
+                BG_FindPurchasableForWeapon( i ) )
+            {
+                BG_RemoveWeaponFromInventory( i, self->client->ps.stats );
+                
+                //add to funds
+                G_AddCreditToClient( self->client, (short)BG_FindPriceForWeapon( i ), qfalse );
+            }
+            
+            //if we have this weapon selected, force a new selection
+            if( i == self->client->ps.weapon )
+                G_ForceWeaponChange( self, WP_NONE );
+        }
+        //try to buy helmet/lightarmour
+        G_BotBuyUpgrade( self, UP_HELMET);
+        G_BotBuyUpgrade( self, UP_LIGHTARMOUR);
+        
+        // buy most expensive first, then one cheaper, etc, dirty but working way
+        if( !G_BotBuyWeapon( self, WP_LUCIFER_CANNON ) )
+            if( !G_BotBuyWeapon( self, WP_FLAMER ) )
+                if( !G_BotBuyWeapon( self, WP_PULSE_RIFLE ) )
+                    if( !G_BotBuyWeapon( self, WP_CHAINGUN ) )
+                        if( !G_BotBuyWeapon( self, WP_MASS_DRIVER ) )
+                            if( !G_BotBuyWeapon( self, WP_LAS_GUN ) )
+                                if( !G_BotBuyWeapon( self, WP_SHOTGUN ) )
+                                    if( !G_BotBuyWeapon( self, WP_PAIN_SAW ) )
+                                        G_BotBuyWeapon( self, WP_MACHINEGUN );
+                                    
+        //buy ammo/batpack
+        if( BG_FindUsesEnergyForWeapon( self->client->ps.weapon )) {
+            G_BotBuyUpgrade( self, UP_BATTPACK );
+        }else {
+            G_BotBuyUpgrade( self, UP_AMMO );
+        }
+    }
 }
 /**
  * G_BotReactToEnemy
