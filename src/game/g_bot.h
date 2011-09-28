@@ -24,40 +24,48 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //#include "g_local.h"
 
 int G_BotBuyUpgrade ( gentity_t *ent, int upgrade );
-int G_BotBuy ( gentity_t *ent, int weapon );
+void G_BotThink(gentity_t *self);
+void G_BotModusManager(gentity_t *self);
+void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer);
+void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer);
+void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer);
+void G_BotBuy ( gentity_t *self, usercmd_t *botCmdBuffer);
+void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer);
+void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer );
+void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer);
+void G_BotDodge(gentity_t *self, usercmd_t *botCmdBuffer);
+int botGetAimEntityNumber(gentity_t *self);
+qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target);
+void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer);
+int getTargetEntityNumber(botTarget_t target);
+vec3_t getTargetPos(botTarget_t target);
+int getTargetTeam( botTarget_t target);
+int getTargetType( botTarget_t target);
+qboolean targetIsEntity( botTarget_t target);
+void setGoalEntity(gentity_t *self, gentity_t *goal );
+void setGoalCoordinate(gentity_t *self, vec3_t goal );
+void setTargetEntity(botTarget_t *target, gentity_t *goal );
+void setTargetCoordinate(botTarget_t *target, vec3_t goal );
+
 int G_BotEvolve( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer);
-void Buy( gentity_t *self, usercmd_t *botCmdBuffer );
 void G_BotEvolveAI ( gentity_t *self , usercmd_t *botCmdBuffer);
-void G_BotMove( gentity_t *bot , usercmd_t *botCmdBuffer);
-void G_BotAlienThink( gentity_t *self );
-void G_BotHumanThink( gentity_t *self );
-void botAimAtTarget( gentity_t *self, vec3_t target , usercmd_t *rAngles);
+void botGetAimLocation( gentity_t *target, vec3_t *aimLocation);
+void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec);
+void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec );
+void botAimAtLocation( gentity_t *self, vec3_t target , usercmd_t *rAngles);
 int botFindDamagedFriendlyStructure( gentity_t *self );
 int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
-qboolean botWillHitEnemy( gentity_t *self, gentity_t *target );
-int botGetDistanceBetweenPlayer( gentity_t *self, gentity_t *player );
-qboolean botPathIsBlocked( gentity_t *self );
-qboolean botAttackIfTargetInRange( gentity_t *self, gentity_t *target , usercmd_t *botCmdBuffer);
-qboolean botTargetInRange( gentity_t *self, gentity_t *target );
-void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer );
+int botFindBuilding(gentity_t *self, int buildingType, int range);
+
+int findClosestNode( vec3_t start );
 void findNextNode( gentity_t *self );
 void findNewNode( gentity_t *self , usercmd_t *botCmdBuffer);
-void botAimAtNode( gentity_t *self , usercmd_t *rAngels);
-int distanceToTargetNode( gentity_t *self );
-void findRouteToTarget( gentity_t *self, vec3_t dest );
-void Attack( gentity_t *self, qboolean attackTeam, usercmd_t *botCmdBuffer);
-void Follow( gentity_t *self , usercmd_t *botCmdBuffer);
-void Repair(gentity_t *self, usercmd_t *botCmdBuffer);
-void Heal(gentity_t *self, usercmd_t *botCmdBuffer);
-void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec);
-void getWeaponAttributes(gentity_t *self, float *range, float *width);
-int findClosestNode( vec3_t start );
-void targetObjective( gentity_t *self, usercmd_t *botCmdBuffer);
-void botGetAimLocation( gentity_t *target, vec3_t *aimLocation);
-void goToward(gentity_t *self, vec3_t target, usercmd_t *botCmdBuffer);
+void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer );
+
+void findRouteToTarget( gentity_t *self, botTarget_t target );
 void setNewRoute(gentity_t *self);
-int botFindBuilding(gentity_t *self, int buildingType, int range);
-void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec );
+
+qboolean botTargetInRange( gentity_t *self, gentity_t *target );
 qboolean G_BotCheckForSpawningPlayers( gentity_t *self );
 qboolean botWeaponHasLowAmmo(gentity_t *self);
 void setSkill(gentity_t *self, int skill);
@@ -66,7 +74,7 @@ qboolean botShouldJump(gentity_t *self);
 qboolean botNeedsItem(gentity_t *self);
 qboolean botCanShop(gentity_t *self);
 qboolean botStructureIsDamaged(int team);
-qboolean G_BotBuyWeapon(self, int weapon);
+qboolean G_BotBuyWeapon(gentity_t *self, int weapon);
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
 
