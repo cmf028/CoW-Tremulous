@@ -26,7 +26,7 @@
 #include "g_local.h"
 #include "g_bot.h"
 
-int G_BotEvolve( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer)
+int G_BotEvolveToClass( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer)
 {
     int clientNum;
     int i;
@@ -146,34 +146,5 @@ int G_BotEvolve( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer)
             return 0;
     }
     return 0;
-}
-
-void G_BotEvolveAI ( gentity_t *self, usercmd_t *botCmdBuffer )
-{
-    //if bot evolution is enabled
-    if(g_bot_evolve.integer > 0)
-        if(self->client->pers.teamSelection == PTE_ALIENS) {
-
-            if((self->client->time10000 % 2000) == 0)
-                // check if evo's > 0
-                if( (short)self->client->ps.persistant[ PERS_CREDIT ] > 0) {
-                    //trap_SendServerCommand( -1, va( "print \"trying to evolve\n\"") );
-
-                    // very not-clean code, but hea it works
-                    int res;
-                    if(!G_BotEvolve(self, "level4", botCmdBuffer))
-                        if(!G_BotEvolve(self, "level3upg", botCmdBuffer)) {
-                            res = (random()>0.5) ? G_BotEvolve(self, "level3", botCmdBuffer) : G_BotEvolve(self, "level2upg", botCmdBuffer);
-                            if(!res) {
-                                res = (random()>0.5) ? G_BotEvolve(self, "level2", botCmdBuffer) : G_BotEvolve(self, "level1upg", botCmdBuffer);
-                                if(!res)
-                                    if(!G_BotEvolve(self, "level1", botCmdBuffer))
-                                        G_BotEvolve(self, "level0", botCmdBuffer);
-                            }
-                        }
-
-                }
-
-        }       // aliens
 }
 

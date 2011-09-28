@@ -47,8 +47,8 @@ void setGoalCoordinate(gentity_t *self, vec3_t goal );
 void setTargetEntity(botTarget_t *target, gentity_t *goal );
 void setTargetCoordinate(botTarget_t *target, vec3_t goal );
 
-int G_BotEvolve( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer);
-void G_BotEvolveAI ( gentity_t *self , usercmd_t *botCmdBuffer);
+int G_BotEvolveToClass( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer);
+void G_BotEvolve ( gentity_t *self , usercmd_t *botCmdBuffer);
 void botGetAimLocation( gentity_t *target, vec3_t *aimLocation);
 void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec);
 void botShakeAim( gentity_t *self, vec3_t target, vec3_t *rVec );
@@ -93,7 +93,7 @@ qboolean G_BotBuyWeapon(gentity_t *self, int weapon);
 //How long in milliseconds the bots will chase a friend if he goes out of their sight (humans) or radar (aliens)
 #define BOT_FRIEND_CHASETIME 5000
 
-//How often in milliseconds, we will search for a new (closer) enemy
+//How often in milliseconds, we will search for a new (closer) enemy this needs to be kept <= 10000 for now
 #define BOT_ENEMYSEARCH_INTERVAL 500
 
 //at what hp do we use medkit?

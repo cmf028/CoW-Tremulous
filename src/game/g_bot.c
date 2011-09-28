@@ -246,7 +246,10 @@ void G_BotThink( gentity_t *self) {
     //use medkit when hp is low
     if(self->health <= BOT_USEMEDKIT_HP)
         BG_ActivateUpgrade(UP_MEDKIT,self->client->ps.stats);
-        
+    
+    //try to evolve every so often (aliens only)
+    if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
+        G_BotEvolve(self,botCmdBuffer);
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
         case ATTACK:
@@ -269,26 +272,38 @@ void G_BotThink( gentity_t *self) {
  */
 void G_BotModusManager( gentity_t *self ) {
     
-    int enemyIndex = getTargetEntityNumber(self->botMind->goal);
-    if(level.time - self->botMind->enemyLastSeen > BOT_ENEMY_SEARCH_INTERVAL) 
+    int enemyIndex = ENTITYNUM_NONE;
+    
+    //search for a new enemy every so often
+    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
         enemyIndex = botFindClosestEnemy(self);
+    
+    //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
+    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && enemyIndex == ENTITYNUM_NONE);
+        enemyIndex = getTargetEntityNumber(self->botMind->goal);
+    
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
     
-    if(enemyIndex != getTargetEntityNumber(self->botMind->goal) && enemyIndex != ENTITYNUM_NONE) {
+    if(enemyIndex != ENTITYNUM_NONE) {
         self->botMind->currentModus = ATTACK;
-        setGoalEntity(self, &g_entities[enemyIndex]);
-    } else if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal) && damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
+        if(enemyIndex != getTargetEntityNumber(self->botMind->goal))
+            setGoalEntity(self, &g_entities[enemyIndex]);
+    } else if(damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
         self->botMind->currentModus = REPAIR;
-        setGoalEntity(self, &g_entities[damagedBuildingIndex]);
-    } else if(medistatIndex != getTargetEntityNumber(self->botMind->goal) && medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats)) {
+        if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal))
+            setGoalEntity(self, &g_entities[damagedBuildingIndex]);
+    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) 
+    && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         self->botMind->currentModus = HEAL;
-        setGoalEntity(self, &g_entities[medistatIndex]);
-    } else if(armouryIndex != getTargetEntityNumber(self->botMind->goal) && armouryIndex != ENTITYNUM_NONE && botNeedsItem(self)) {
+        if(medistatIndex != getTargetEntityNumber(self->botMind->goal))
+            setGoalEntity(self, &g_entities[medistatIndex]);
+    } else if(armouryIndex != ENTITYNUM_NONE && botNeedsItem(self) && g_bot_buy.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         self->botMind->currentModus = BUY;
-        setGoalEntity(self, &g_entities[armouryIndex]);
-    } else {
+        if(armouryIndex != getTargetEntityNumber(self->botMind->goal))
+            setGoalEntity(self, &g_entities[armouryIndex]);
+    } else if(g_bot_roam.integer > 0){
         self->botMind->currentModus = ROAM;
     }
     
@@ -537,6 +552,21 @@ void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
             G_BotBuyUpgrade( self, UP_AMMO );
         }
     }
+}
+void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
+{
+    // very not-clean code, but hea it works and I'm lazy 
+    int res;
+    if(!G_BotEvolveToClass(self, "level4", botCmdBuffer))
+        if(!G_BotEvolveToClass(self, "level3upg", botCmdBuffer)) {
+            res = (random()>0.5) ? G_BotEvolveToClass(self, "level3", botCmdBuffer) : G_BotEvolveToClass(self, "level2upg", botCmdBuffer);
+            if(!res) {
+                res = (random()>0.5) ? G_BotEvolveToClass(self, "level2", botCmdBuffer) : G_BotEvolveToClass(self, "level1upg", botCmdBuffer);
+                if(!res)
+                    if(!G_BotEvolveToClass(self, "level1", botCmdBuffer))
+                        G_BotEvolveToClass(self, "level0", botCmdBuffer);
+            }
+        }
 }
 /**
  * G_BotReactToEnemy
@@ -964,7 +994,7 @@ void G_BotSpectatorThink( gentity_t *self ) {
         }
     }
 }
-qboolean G_BotCheckForSpawningPlayers( gentity_t *self )
+qboolean G_BotCheckForSpawningPlayers( gentity_t *self ) 
 {
     //this function only checks if there are Humans in the SpawnQueue
     //which are behind the bot
