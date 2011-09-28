@@ -510,6 +510,12 @@ void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     
 }
+/**
+ * G_BotBuy
+ * The AI for making the bot go to an armoury and buying something
+ * Is called in G_BotThink
+ * Decided when to be called in G_BotModusManager
+ */
 void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
     if(DistanceSquared(self->s.pos.trBase, getTargetPos(self->botMind->goal)) > Square(100))
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
@@ -553,6 +559,11 @@ void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
         }
     }
 }
+/**
+ * G_BotEvolve
+ * Used to make an alien evolve
+ * Is called in G_BotThink
+ */
 void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
 {
     // very not-clean code, but hea it works and I'm lazy 
@@ -573,7 +584,7 @@ void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
  * Class specific movement upon seeing an enemy
  * We need this to prevent some alien classes from being an easy target by walking in a straight line
  * ,but also prevent others from being unable to get to the enemy
- * please only use if the bot can SEE his enemy
+ * please only use if the bot can SEE his enemy (botTargetinRange == qtrue)
 */
 void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t forward,right,up,muzzle;
@@ -735,8 +746,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t muzzle;
     AngleVectors(self, forward,right,up);
     CalcMuzzlePoint(self,forward,right,up,muzzle);
-    if( self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS )
-    {
+    if( self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) {
         switch(self->client->ps.stats[STAT_PCLASS]) {
             case PCL_ALIEN_BUILDER0:
                 botCmdBuffer->buttons |= BUTTON_GESTURE;
@@ -779,8 +789,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
                     DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) )
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
-                else
-                {       
+                else {       
                     if(DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[YAW] += 10; //look up a bit more
@@ -879,7 +888,7 @@ void setGoalCoordinate(gentity_t *self, vec3_t goal ) {
 }
 /**setTargetEntity
  * Generic function for setting a botTarget that is not our current goal
- * Note, that this function does not compute a route to the specified target
+ * Note, this function does not compute a route to the specified target
  */
 void setTargetEntity(botTarget_t *target, gentity_t *goal ){
     target->ent = goal;
@@ -887,7 +896,7 @@ void setTargetEntity(botTarget_t *target, gentity_t *goal ){
 }
 /**setTargetCoordinate
  * Generic function for setting a botTarget that is not our current goal
- * Note, that this function does not compute a route to the specified target
+ * Note, this function does not compute a route to the specified target
  */
 void setTargetCoordinate(botTarget_t *target, vec3_t goal ) {
     target->coord = goal;
@@ -916,8 +925,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
         VectorAdd( self->client->ps.origin, vectorRange, maxs );
         VectorSubtract( self->client->ps.origin, vectorRange, mins );
         total_entities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
-        for( i = 0; i < total_entities; ++i )
-        {
+        for( i = 0; i < total_entities; ++i ) {
             target = &g_entities[entityList[ i ] ];
             
             if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered)) {
@@ -930,8 +938,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
             
         }
     } else {
-        for( i = 0; i < MAX_GENTITIES; ++i )
-        {
+        for( i = 0; i < MAX_GENTITIES; ++i ) {
             target = &g_entities[i];
             
             if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered)) {
@@ -962,8 +969,7 @@ void G_BotSpectatorThink( gentity_t *self ) {
             else
                 sq = NULL;
             
-            if( sq && G_BotCheckForSpawningPlayers( self ))
-            {
+            if( sq && G_BotCheckForSpawningPlayers( self )) {
                 G_RemoveFromSpawnQueue( sq, self->s.number );
                 G_PushSpawnQueue( sq, self->s.number );
             }
@@ -1083,8 +1089,7 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
         //G_Printf("turn angle: %f\n", turnAngle);
         }
 
-        if(self->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBINGCEILING )
-        {
+        if(self->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBINGCEILING ) {
                 //NOTE: the grapplePoint is here not an inverted refNormal :(
                 RotatePointAroundVector( aimVec, grapplePoint, oldAimVec, -180.0);
         }
@@ -1095,8 +1100,7 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
 
         VectorSet(self->client->ps.delta_angles, 0.0f, 0.0f, 0.0f);
 
-        for( i = 0; i < 3; i++ )
-        {
+        for( i = 0; i < 3; i++ ) {
                 aimAngles[i] = ANGLE2SHORT(aimAngles[i]);
         }
 
@@ -1108,8 +1112,7 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
         rAngles->angles[2] = aimAngles[2];
 }
 //blatently ripped from ShotgunPattern() in g_weapon.c :)
-void botShakeAim( gentity_t *self, vec3_t *rVec )
-{
+void botShakeAim( gentity_t *self, vec3_t *rVec ){
     vec3_t aim;
     vec3_t forward, right, up;
     float len, speedAngle;
@@ -1143,8 +1146,7 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
     SnapVector(maxs);
     total_entities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
     
-    for( i = 0; i < total_entities; ++i )
-    {
+    for( i = 0; i < total_entities; ++i ) {
         target = &g_entities[entityList[ i ] ];
         //DistanceSquared for performance reasons (doing sqrt constantly is bad and keeping it squared does not change result)
         newDistance = (float) DistanceSquared( self->s.pos.trBase, target->s.pos.trBase );
@@ -1209,12 +1211,10 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
 }
 
 //Begin node/waypoint/path functions
-int distanceToTargetNode( gentity_t *self )
-{
-        return (int) Distance(level.nodes[self->botMind->targetNode].coord, self->s.pos.trBase);
+int distanceToTargetNode( gentity_t *self ) {
+        return (int) Distance(level.nodes[self->botMind->targetNodeID].coord, self->s.pos.trBase);
 }
-void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec)
-{
+void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         vec3_t viewBase;
         vec3_t aimVec, forward;
         vec3_t skilledVec;
@@ -1244,8 +1244,7 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec)
         VectorAdd(viewBase, skilledVec, *rVec);
 }
 
-int findClosestNode( vec3_t start )
-{
+int findClosestNode( vec3_t start ) {
         trace_t trace;
         int i = 0;
         float distance = 0;
@@ -1259,22 +1258,18 @@ int findClosestNode( vec3_t start )
                 {continue;}
                 //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here)
                 distance = (float) DistanceSquared(level.nodes[i].coord,start);
-                if(distance < Square(5000))
-                {
-                        if(closestNodeDistance > distance)
-                        {
+                if(distance < Square(5000)) {
+                        if(closestNodeDistance > distance) {
                                 closestNode = i;
                                 closestNodeDistance = distance;
                                 nodeFound = qtrue;
                         }
                 }
         }
-        if(nodeFound == qtrue)
-        {
+        if(nodeFound == qtrue) {
                 return closestNode;
         }
-        else
-        {
+        else {
             //try to find closest node without checking for LOS from start point
             //last ditch attempt to compensate for weird (glitch) building positons and bad node layouts
             for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
@@ -1282,10 +1277,8 @@ int findClosestNode( vec3_t start )
                 //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here
                 //adding the height difference to the distance to get a more reliable path (more likely that wanted node is on same level as start)
                 distance = (float) DistanceSquared(level.nodes[i].coord,start) + (Square(start[2]) - Square(level.nodes[i].coord[2]));
-                if(distance < Square(5000))
-                {
-                    if(closestNodeDistance > distance)
-                    {
+                if(distance < Square(5000)) {
+                    if(closestNodeDistance > distance) {
                         closestNode = i;
                         closestNodeDistance = distance;
                         nodeFound = qtrue;
@@ -1325,15 +1318,11 @@ void findNextNode( gentity_t *self )
         int lasttarget = self->botMind->targetNode;
         possibleNodes[0] = possibleNodes[1] = possibleNodes[2] = possibleNodes[3] = possibleNodes[4] = 0;
         if(!self->botMind->followingRoute) {
-            for(i = 0; i < 5; i++)
-            {
+            for(i = 0; i < 5; i++) {
                     if(level.nodes[self->botMind->targetNode].nextid[i] < level.numNodes &&
-                            level.nodes[self->botMind->targetNode].nextid[i] >= 0)
-                    {
-                            if(self->botMind->lastNodeID >= 0)
-                            {
-                                    if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNode].nextid[i])
-                                    {
+                    level.nodes[self->botMind->targetNode].nextid[i] >= 0) {
+                            if(self->botMind->lastNodeID >= 0) {
+                                    if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNode].nextid[i]) {
                                             continue;
                                     }
                             }
@@ -1341,20 +1330,16 @@ void findNextNode( gentity_t *self )
                             possibleNextNode++;
                     }
             }
-            if(possibleNextNode == 0)
-            {       
+            if(possibleNextNode == 0) {       
                     self->botMind->state = FINDNEWNODE;
                     return;
             }
-            else
-            {
+            else {
                     self->botMind->state = TARGETNODE;
-                    if(level.nodes[self->botMind->targetNode].random < 0)
-                    {
+                    if(level.nodes[self->botMind->targetNode].random < 0) {
                             nextNode = 0;
                     }
-                    else
-                    {
+                    else {
                             srand( trap_Milliseconds( ) );
                             randnum = (int)(( (double)rand() / ((double)(RAND_MAX)+(double)(1)) ) * possibleNextNode);
                             nextNode = randnum;
@@ -1363,10 +1348,8 @@ void findNextNode( gentity_t *self )
                     }
                     self->botMind->lastNodeID = self->botMind->targetNode;
                     self->botMind->targetNodeID = possibleNodes[nextNode];
-                    for(i = 0;i < 5;i++)
-                    {
-                            if(level.nodes[self->botMind->targetNode].nextid[i] == lasttarget)
-                            {
+                    for(i = 0;i < 5;i++) {
+                            if(level.nodes[self->botMind->targetNode].nextid[i] == lasttarget) {
                                     i = 5;
                             }
                     }
@@ -1385,8 +1368,7 @@ void findNextNode( gentity_t *self )
 void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
 {
     vec3_t tmpVec;
-    switch(self->botMind->state)
-    {
+    switch(self->botMind->state) {
         case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
         case FINDNEXTNODE: findNextNode(self); break;
         case TARGETNODE:break; //basically used as a flag that is checked elsewhere
@@ -1394,18 +1376,15 @@ void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
         case TARGETOBJECTIVE: break;
         default: break;
     }
-    if(self->botMind->state == TARGETNODE && (self->botMind->followingRoute || g_bot_roam.integer == 1))
-        {
+    if(self->botMind->state == TARGETNODE && (self->botMind->followingRoute || g_bot_roam.integer == 1)) {
                 #ifdef BOT_DEBUG
                 trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
                 #endif
                 botSlowAim(self, level.nodes[self->botMind->targetNode].coord, 0.5, &tmpVec);
-                botAimAtTarget(self, tmpVec, botCmdBuffer);
+                botAimAtLocation(self, tmpVec, botCmdBuffer);
                 G_BotMove( self, botCmdBuffer );
-                if(self->botMind->lastNodeID >= 0 )
-                {
-                        switch(level.nodes[self->botMind->lastNodeID].action)
-                        {
+                if(self->botMind->lastNodeID >= 0 ) {
+                        switch(level.nodes[self->botMind->lastNodeID].action) {
                                 case BOT_JUMP:  
                                     
                                     if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
@@ -1421,8 +1400,7 @@ void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
                                     botCmdBuffer->upmove = -1;
                                 }
                                 break;
-                                case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS)
-                                {
+                                case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS) {
                                     botCmdBuffer->upmove = -1;
                                 }
                                 break;
@@ -1435,19 +1413,16 @@ void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
                                     break;
                                 default: break;
                         }
-                        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout)
-                        {
+                        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
                                 self->botMind->state = FINDNEWNODE;
                                 self->botMind->timeFoundNode = level.time;
                         }
                 }
-                else if( level.time - self->botMind->timeFoundNode > 10000 )
-                {
+                else if( level.time - self->botMind->timeFoundNode > 10000 ) {
                         self->botMind->state = FINDNEWNODE;
                         self->botMind->timeFoundNode = level.time;
                 }
-                if(distanceToTargetNode(self) < 70)
-                {
+                if(distanceToTargetNode(self) < 70) {
                         self->botMind->state = FINDNEXTNODE;
                         self->botMind->timeFoundNode = level.time;
                 }
