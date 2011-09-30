@@ -383,8 +383,144 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
  * Will use a modified depth first search to get to the goal
  * This is used when the bot has no direct target, instead, it needs to wander the map to look for a target
  */
-void G_BotSearchForGoal( gentity_t *self ) {
+/*void G_BotSearchForGoal( gentity_t *self , usercmd_t *botCmdBuffer) {
+    if(self->botMind->targetNodeID == -1) {
+        resetSearch(self);
+        findNewNode(self, botCmdBuffer);
+    }
+    setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
+    G_BotGoto( self, self->botMind->targetNode, botCmdBuffer );
     
+    switch(level.nodes[self->botMind->lastNodeID].action)
+    {
+        case BOT_JUMP:  
+            
+            if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
+                self->client->ps.stats[ STAT_STAMINA ] < 0 )
+            {break;}
+            //we should not need this now that wallclimb is always enabled in G_BotGoto
+        case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
+            botCmdBuffer->upmove = -1;
+        }
+        break;
+        case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS)
+        {
+            botCmdBuffer->upmove = -1;
+        }
+        break;
+        case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
+            self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
+            botCmdBuffer->buttons |= BUTTON_ATTACK2;
+            else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
+                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
+                botCmdBuffer->buttons |= BUTTON_ATTACK2;
+            break;
+        default: break;
+    }
+    //apparently, we are stuck, so go to the previous node
+    if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout)
+    {
+        self->botMind->targetNodeID = self->botMind->lastNodeID;
+    }
+    
+    else if( level.time - self->botMind->timeFoundNode > 10000 )
+    {
+        self->botMind->targetNodeID = self->botMind->lastNodeID;
+    }
+    if(distanceToTargetNode(self) < 70)
+    {
+        if(self->botMind->targetNodeID == self->botMind->endNodeID) {
+            resetDepthSearch(self);
+            findNewNode(self);
+        } else {
+            self->botMind->nodeTree[self->botMind->currentDepth] = self->botMind->targetNodeID;
+            self->botMind->visitedNodes[self->botMind->visitIndex] = self->botMind->targetNodeID;
+            self->botMind->currentDepth++;
+            self->botMind->visitIndex++;
+            searchDirection = rand() % 2 == 1 ? 4 : 0;
+            self->botMind->lastNodeID = self->botMind->targetNodeID;
+            for(i=0;i<5;i++) {
+                
+                if(!botHasVisitedNode(level.nodes[self->botMind->targetNodeID].nextid[Q_fabs(searchDirection - i)])) {
+                    self->botMind->targetNodeID = level.nodes[self->botMind->targetNodeID].nextid[Q_fabs(searchDirection - i)];
+                    i = 5;
+                }
+            }
+            //we did not find a node that was connected and not visited
+            if(self->botMind->targetNodeID == self->botMind->lastNodeID) {
+                self->botMind->backTrack = qtrue;
+                self->botMind->targetNodeID = self->botMind->nodeTree[self->botMind->currentDepth - 1];
+                self->botMind->currentDepth--;
+            }
+            self->botMind->timeFoundNode = level.time;
+        }
+        
+    }
+    
+    
+}*/
+//using PBot Code for now..
+void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
+    vec3_t tmpVec;
+    switch(self->botMind->state) {
+        case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
+        case FINDNEXTNODE: findNextNode(self); break;
+        case TARGETNODE:break; //basically used as a flag that is checked elsewhere
+        case LOST: findNewNode(self, botCmdBuffer);break; //This should never happen unless there are 0 waypoints on the map
+        case TARGETOBJECTIVE: break;
+        default: break;
+    }
+    if(self->botMind->state == TARGETNODE) {
+        #ifdef BOT_DEBUG
+        trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
+        #endif
+        setTargetCoordinate(self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
+        G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
+        
+        if(self->botMind->lastNodeID >= 0 ) {
+            switch(level.nodes[self->botMind->lastNodeID].action) {
+                case BOT_JUMP:  
+                    
+                    if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
+                        self->client->ps.stats[ STAT_STAMINA ] < 0 )
+                    {break;}
+                    if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
+                        
+                        botCmdBuffer->upmove = 20;
+                    
+                    
+                    break;
+                case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
+                    botCmdBuffer->upmove = -1;
+                }
+                break;
+                case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS) {
+                    botCmdBuffer->upmove = -1;
+                }
+                break;
+                case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
+                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
+                    botCmdBuffer->buttons |= BUTTON_ATTACK2;
+                    else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
+                        self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
+                        botCmdBuffer->buttons |= BUTTON_ATTACK2;
+                    break;
+                default: break;
+            }
+            if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
+                self->botMind->state = FINDNEWNODE;
+                self->botMind->timeFoundNode = level.time;
+            }
+        }
+        else if( level.time - self->botMind->timeFoundNode > 10000 ) {
+            self->botMind->state = FINDNEWNODE;
+            self->botMind->timeFoundNode = level.time;
+        }
+        if(distanceToTargetNode(self) < 70) {
+            self->botMind->state = FINDNEXTNODE;
+            self->botMind->timeFoundNode = level.time;
+        }
+    }
 }
 
 /**G_BotGoto
@@ -578,6 +714,9 @@ void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
                         G_BotEvolveToClass(self, "level0", botCmdBuffer);
             }
         }
+}
+void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
+    G_BotSearchForGoal(self, botCmdBuffer);
 }
 /**
  * G_BotReactToEnemy
@@ -1298,7 +1437,6 @@ void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     if(closestNode != -1) {
     self->botMind->targetNode = closestNode;
     self->botMind->timeFoundNode = level.time;
-    self->botMind->state = TARGETNODE;
     } else {
         self->botMind->state = LOST;
         botCmdBuffer->forwardmove = 0;
