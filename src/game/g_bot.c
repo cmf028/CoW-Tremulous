@@ -616,24 +616,28 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
         G_ForceWeaponChange( self, WP_BLASTER );
     
-    
+    //aliens have radar so they will always 'see' the enemy if they are in radar range
+    if(self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS) {
+        self->botMind->enemyLastSeen = level.time;
+    }
     if(botTargetInAttackRange(self, self->botMind->goal)) {
         
         self->botMind->followingRoute = qfalse;
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         botFireWeapon(self, botCmdBuffer);
-    } else if(botTargetInRange(self, self->botMind->goal)) {
         self->botMind->enemyLastSeen = level.time;
+    } else if(botTargetInRange(self, self->botMind->goal)) {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         G_BotReactToEnemy(self, botCmdBuffer);
-    } else if(!self->botMind->followingRoute){
+        self->botMind->enemyLastSeen = level.time;
+    } else if(!self->botMind->followingRoute || self->botMind->targetNodeID == -1){
         findRouteToTarget(self, self->botMind->goal);
         setNewRoute(self);
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     } else {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     }
-    self->botMind->enemyLastSeen = level.time;
+    
     
 }
 /**
@@ -763,6 +767,7 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
         case PCL_ALIEN_LEVEL3:
         case PCL_ALIEN_LEVEL3_UPG:
             self->botMind->followingRoute = qfalse;
+            /*
             getTargetPos(self->botMind->goal,&targetPos);
             //pounce to the target
             if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
@@ -770,7 +775,7 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
                 //look up a bit more
                 botCmdBuffer->angles[PITCH] -= 3000.0f;
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
-            }
+            }*/
             break;
         case PCL_ALIEN_LEVEL4:
             getTargetPos(self->botMind->goal, &targetPos);
