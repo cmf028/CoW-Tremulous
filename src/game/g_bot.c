@@ -286,7 +286,7 @@ void G_BotModusManager( gentity_t *self ) {
         enemyIndex = botFindClosestEnemy(self, qfalse);
     
     //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
-    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK)
+    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && g_entities[getTargetEntityNumber(self->botMind->goal)].health > 0)
         enemyIndex = getTargetEntityNumber(self->botMind->goal);
     
    
