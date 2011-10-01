@@ -900,8 +900,8 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     }
     getTargetPos(target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
-    if((DistanceSquared(muzzle,targetPos) <= Square(range) 
-    || (DistanceSquared(muzzle,targetPos) <= Square(secondaryRange) && DistanceSquared(muzzle,targetPos) > Square((secondaryRange - range)/2)))
+    if((DistanceSquared(self->s.pos.trBase,targetPos) <= Square(range) 
+    || (DistanceSquared(self->s.pos.trBase, targetPos) <= Square(secondaryRange) && DistanceSquared(self->s.pos.trBase,targetPos) > Square((secondaryRange - range)/2)))
     &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid)
         return qtrue;
     else
