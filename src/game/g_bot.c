@@ -246,8 +246,8 @@ void G_BotThink( gentity_t *self) {
         BG_ActivateUpgrade(UP_MEDKIT,self->client->ps.stats);
     
     //try to evolve every so often (aliens only)
-    //if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
-        //G_BotEvolve(self,&botCmdBuffer);
+    if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
+        G_BotEvolve(self,&botCmdBuffer);
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
         case ATTACK:
@@ -604,9 +604,9 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
 void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
     
     //switch to blaster
-    /*if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
+    if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
-        G_ForceWeaponChange( self, WP_BLASTER );*/
+        G_ForceWeaponChange( self, WP_BLASTER );
     
     if(botTargetInAttackRange(self, self->botMind->goal)) {
         
