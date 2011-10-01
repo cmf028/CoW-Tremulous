@@ -1,11 +1,25 @@
-Bots 2.0 development branch
-This branch is being used for the development of new and improved bots for tremulous.
+CoW Tremulous QVM v2.0
 
-The goals of this rewrite are:
-Reduce the complexity of the bot's AI functions
-Improve code readability
-Fix longstanding bugs
-Improve the design and extensibility of the code
-Be a much better "base" for even more advanced bots in the future
+Current Features (Over Lakitu QVM 5.5):
+Advanced bots with route finding capabilities and waypoint support. Entirely customisable!
+!loadlayout allows loading of a new layout without a restart
+!loadrotation allows the changing of rotations on demand
+!strip and associated commands allow admins to control a player's access to weapons/armor/classes.
 
-Currently, the bot is finished, but needs testing and bugs ironed out
+Bot Specific Features:
+!botcfg allows loading/saving of bot configuration files
+!botset allows the changing of bot abilities
+!botcmd changes the bots behavior
+!bot adds bots with a specified skill level
+!drawnodes shows the waypoints
+/node allows the making of waypoints for the bots
+
+Bots can:
+Go to a medistat to heal
+Go to an armoury to buy weapons and armor
+Evolve
+Use secondary abilities like lighting, pounce, snipe, charge
+Wallcrawl
+Use waypoints to navigate the map and go to a location without getting stuck
+Effectively dodge.
+Will not keep human players from spawning
