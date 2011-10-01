@@ -65,12 +65,8 @@ void G_BotAdd( char *name, int team, int skill ) {
 
     //default bot data
     bot->botMind = &g_botMind[clientNum];
-    bot->botMind->command = BOT_AUTO;
-    bot->botMind->friend = NULL;
-    bot->botMind->enemy = NULL;
-    bot->botMind->friendLastSeen = 0;
     bot->botMind->enemyLastSeen = 0;
-   
+    bot->botMind->command = BOT_AUTO;
     bot->botMind->botTeam = team;
     bot->botMind->spawnItem = WP_HBUILD;
     bot->botMind->state = FINDNEWNODE;
@@ -121,28 +117,12 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
     if( !( bot->r.svFlags & SVF_BOT ) )
         return;
 
-    bot->botMind->friend = NULL;
-    bot->botMind->enemy = NULL;
-    bot->botMind->friendLastSeen = 0;
-    bot->botMind->enemyLastSeen = 0;
-
     if( !Q_stricmp( command, "auto" ) )
         bot->botMind->command = BOT_AUTO;
     else if( !Q_stricmp( command, "attack" ) )
         bot->botMind->command = BOT_ATTACK;
     else if( !Q_stricmp( command, "idle" ) )
         bot->botMind->command = BOT_IDLE;
-    else if( !Q_stricmp( command, "defensive" ) ) {
-        bot->botMind->command = BOT_DEFENSIVE;
-        bot->botMind->defensePoint = bot->s.pos.trBase;
-    } else if( !Q_stricmp( command, "followattack" ) ) {
-        bot->botMind->command = BOT_FOLLOW_FRIEND_ATTACK;
-        bot->botMind->friend = master;
-    } else if( !Q_stricmp( command, "followidle" ) ) {
-        bot->botMind->command = BOT_FOLLOW_FRIEND_IDLE;
-        bot->botMind->friend = master;
-    } else if( !Q_stricmp( command, "teamkill" ) )
-        bot->botMind->command = BOT_TEAM_KILLER;
     else if( !Q_stricmp( command, "repair" ) ) {
         if(BG_InventoryContainsWeapon(WP_HBUILD, bot->client->ps.stats)) {
             bot->botMind->command = BOT_REPAIR;
@@ -154,7 +134,6 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
         bot->botMind->spawnItem = WP_HBUILD;
     else {
         bot->botMind->command = BOT_AUTO;
-        trap_SendServerCommand(-1, "print \"Unknown mode. Reverting to auto.\n\"");
     }
     return;
 }
@@ -248,6 +227,11 @@ void G_BotThink( gentity_t *self) {
     //try to evolve every so often (aliens only)
     if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
         G_BotEvolve(self,&botCmdBuffer);
+    
+    //infinite funds cvar
+    if(g_bot_infinite_funds.integer == 1)
+        G_AddCreditToClient(self->client, HUMAN_MAX_CREDITS, qtrue);
+    
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
         case ATTACK:
@@ -255,6 +239,7 @@ void G_BotThink( gentity_t *self) {
             break;
         case BUILD:
            // G_BotBuild(self, &botCmdBuffer);
+           break;
         case BUY:
             G_BotBuy(self, &botCmdBuffer);
             break;
@@ -266,6 +251,8 @@ void G_BotThink( gentity_t *self) {
             break;
         case ROAM:
             G_BotRoam(self, &botCmdBuffer);
+            break;
+        case IDLE:
             break;
     }
     self->client->pers.cmd =botCmdBuffer;
@@ -289,33 +276,40 @@ void G_BotModusManager( gentity_t *self ) {
     if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && g_entities[getTargetEntityNumber(self->botMind->goal)].health > 0 && enemyIndex == ENTITYNUM_NONE)
         enemyIndex = getTargetEntityNumber(self->botMind->goal);
     
+    //dont do anything if given the idle command
+    if(self->botMind->command == BOT_IDLE) {
+        self->botMind->currentModus = IDLE;
+        return;
+    }
    
     
-    if(enemyIndex != ENTITYNUM_NONE) {
+    if(enemyIndex != ENTITYNUM_NONE && self->botMind->command != BOT_REPAIR) {
         self->botMind->currentModus = ATTACK;
         if(enemyIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[enemyIndex]);
         }
         self->botMind->state = FINDNEWNODE;
-    } else if(damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
+    } else if(damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats) && self->botMind->command != BOT_ATTACK) {
         self->botMind->currentModus = REPAIR;
         if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[damagedBuildingIndex]);
         }
         self->botMind->state = FINDNEWNODE;
-    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
+    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) 
+    && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS && self->botMind->command != BOT_REPAIR) {
         self->botMind->currentModus = HEAL;
         if(medistatIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[medistatIndex]);
         }
         self->botMind->state = FINDNEWNODE;
-    } else if(armouryIndex != ENTITYNUM_NONE && botNeedsItem(self) && g_bot_buy.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
+    } else if(armouryIndex != ENTITYNUM_NONE && botNeedsItem(self) && g_bot_buy.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS 
+    && self->botMind->command != BOT_REPAIR) {
         self->botMind->currentModus = BUY;
         if(armouryIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[armouryIndex]);
         }
         self->botMind->state = FINDNEWNODE;
-    } else if(g_bot_roam.integer > 0){
+    } else if(g_bot_roam.integer > 0 && self->botMind->command != BOT_REPAIR){
         self->botMind->currentModus = ROAM;
     }
     
@@ -562,16 +556,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     
     //dodge if going toward enemy
     if(self->client->ps.stats[STAT_PTEAM] != getTargetTeam(target) && getTargetTeam(target) != PTE_NONE) {
-        if(self->client->time1000 >= 500)
-            botCmdBuffer->rightmove = 127;
-        else
-            botCmdBuffer->rightmove = -127;
-        
-        if((self->client->time10000 % 2000) < 1000)
-            botCmdBuffer->rightmove *= -1;
-        
-        if((self->client->time1000 % 300) >= 100 && (self->client->time10000 % 3000) > 2000)
-            botCmdBuffer->rightmove = 0;
+        G_BotDodge(self, botCmdBuffer);
     }
     
     //this is here so we dont run out of stamina..
@@ -963,9 +948,10 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 break;
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
-                    DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) )
+                    DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) ) {
+                    botCmdBuffer->angles[PITCH] -= 3000.0f; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
-                else {       
+                } else {       
                     if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[PITCH] -= 3000.0f; //look up a bit more

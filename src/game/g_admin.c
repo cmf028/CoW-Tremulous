@@ -88,7 +88,7 @@ g_admin_cmd_t g_admin_cmds[ ] =
     },
     {"botcmd", G_admin_botcmd, "z",
       "Change bot behavior.",
-      "[^3name^7] [^5regular/idle/defensive/followattack/followidle/teamkill/repair/auto/spawnrifle/spawnckit^7]"
+      "[^3name^7] [^5attack/idle/repair/auto/spawnrifle/spawnckit^7]"
     },
     {"botset", G_admin_botset, "z",
     "Configure bot capabilities",

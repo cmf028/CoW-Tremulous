@@ -83,15 +83,8 @@ typedef enum
 #define SP_PODIUM_MODEL   "models/mapobjects/podium/podium4.md3"
 typedef enum
 {
-  BOT_REGULAR = 1,
   BOT_IDLE,
   BOT_ATTACK,
-  BOT_STAND_GROUND,
-  BOT_DEFENSIVE,
-  BOT_FOLLOW_FRIEND_PROTECT,
-  BOT_FOLLOW_FRIEND_ATTACK,
-  BOT_FOLLOW_FRIEND_IDLE,
-  BOT_TEAM_KILLER,
   BOT_REPAIR,
   BOT_AUTO
 } botCommand_t;
@@ -103,8 +96,8 @@ typedef enum
     BUY,
     HEAL,
     REPAIR,
-    ROAM
-    
+    ROAM,
+    IDLE
 } botModus_t;
 
 typedef struct
@@ -145,10 +138,6 @@ typedef struct
 {
     //for targeting following
     botCommand_t          command;
-    gentity_t         *enemy;
-    gentity_t         *target;
-    gentity_t         *friend;
-    int                           friendLastSeen;
     int                           enemyLastSeen;
     int                           botTeam;
     int timeFoundEnemy;
