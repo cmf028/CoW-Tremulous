@@ -798,15 +798,15 @@ void G_BotDodge(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Returns the entity number of the entity that the bot is currently aiming at
  */
 int botGetAimEntityNumber(gentity_t *self) {
-    vec3_t forward,right,up;
-    vec3_t muzzle, end;
+    vec3_t forward;
+    vec3_t end;
     trace_t trace;
-    AngleVectors( self->client->ps.viewangles, forward, right, up);
+    AngleVectors( self->client->ps.viewangles, forward, NULL,NULL);
     
-    CalcMuzzlePoint( self, forward, right, up , muzzle);
-    VectorMA(muzzle, 4092, forward, end);
     
-    trap_Trace(&trace, muzzle, NULL, NULL, end, self->s.number, MASK_SHOT);
+    VectorMA(self->client->ps.origin, 4092, forward, end);
+    
+    trap_Trace(&trace, self->client->ps.origin, NULL, NULL, end, self->s.number, MASK_SHOT);
     return trace.entityNum;
 }
 /**botTargetInAttackRange
