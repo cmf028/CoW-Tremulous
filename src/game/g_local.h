@@ -31,7 +31,6 @@ typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
 #include "g_admin.h"
-#include "../tools/lcc/src/c.h"
 
 //==================================================================
 

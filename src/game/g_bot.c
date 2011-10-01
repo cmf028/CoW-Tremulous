@@ -191,7 +191,6 @@ int getStrafeDirection(gentity_t *self) {
     vec3_t startRight,startLeft;
     vec3_t maxs;
     vec3_t forward, right, up;
-    vec3_t muzzle;
     vec3_t end;
     
     int strafe;
@@ -237,7 +236,6 @@ int getStrafeDirection(gentity_t *self) {
  * Executes the different bot functions based on the bot's mode
 */
 void G_BotThink( gentity_t *self) {
-    int tempEntityIndex = -1;
     usercmd_t  botCmdBuffer = self->client->pers.cmd;
     botCmdBuffer.buttons = 0;
     botCmdBuffer.forwardmove = 0;
@@ -249,13 +247,13 @@ void G_BotThink( gentity_t *self) {
     
     //try to evolve every so often (aliens only)
     if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
-        G_BotEvolve(self,botCmdBuffer);
+        G_BotEvolve(self,&botCmdBuffer);
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
         case ATTACK:
             G_BotAttack(self, &botCmdBuffer);
         case BUILD:
-            G_BotBuild(self, &botCmdBuffer);
+           // G_BotBuild(self, &botCmdBuffer);
         case BUY:
             G_BotBuy(self, &botCmdBuffer);
         case HEAL:
@@ -273,18 +271,19 @@ void G_BotThink( gentity_t *self) {
 void G_BotModusManager( gentity_t *self ) {
     
     int enemyIndex = ENTITYNUM_NONE;
-    
-    //search for a new enemy every so often
-    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
-        enemyIndex = botFindClosestEnemy(self);
-    
-    //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
-    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && enemyIndex == ENTITYNUM_NONE);
-        enemyIndex = getTargetEntityNumber(self->botMind->goal);
-    
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
+    
+    //search for a new enemy every so often
+    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
+        enemyIndex = botFindClosestEnemy(self, qfalse);
+    
+    //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
+    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && enemyIndex == ENTITYNUM_NONE)
+        enemyIndex = getTargetEntityNumber(self->botMind->goal);
+    
+   
     
     if(enemyIndex != ENTITYNUM_NONE) {
         self->botMind->currentModus = ATTACK;
@@ -315,12 +314,8 @@ void G_BotModusManager( gentity_t *self ) {
 *If the goal is not seen, then it computes a new route to the goal and follows it
 */
 void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
-    vec3_t aimVec;
-    vec3_t forward, right, up;
-    vec3_t muzzle;
-    trace_t trace;
     
-    if(self->botMind->followingRoute && self->botMind->targetNode != -1) {
+    if(self->botMind->followingRoute && self->botMind->targetNodeID != -1) {
         setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
         G_BotGoto( self, self->botMind->targetNode, botCmdBuffer );
         
@@ -461,7 +456,6 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 }*/
 //using PBot Code for now..
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
-    vec3_t tmpVec;
     switch(self->botMind->state) {
         case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
         case FINDNEXTNODE: findNextNode(self); break;
@@ -474,7 +468,7 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
         #ifdef BOT_DEBUG
         trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
         #endif
-        setTargetCoordinate(self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
+        setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
         G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
         
         if(self->botMind->lastNodeID >= 0 ) {
@@ -532,27 +526,27 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     vec3_t tmpVec;
     
     //aim at the destination
-    botGetAimLocation(self, target, &tmpVec);
+    botGetAimLocation(target, &tmpVec);
     
-    if(!targetIsEntity(self, target))
+    if(!targetIsEntity(target))
         botSlowAim(self, tmpVec, 0.5f, &tmpVec);
     else
         botSlowAim(self, tmpVec, self->botMind->botSkill.aimSlowness, &tmpVec);
     
-    if(getTargetType(self, target) != ET_BUILDABLE && targetIsEntity(self,target)) {
+    if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target)) {
         botShakeAim(self, &tmpVec);
     }
-    botAimAtLocation(self, tmpVec);
+    botAimAtLocation(self, tmpVec, botCmdBuffer);
     
     //humans should not move if they are targetting, and can hit, a building
-    if(botTargetInAttackRange(self, target) && getTargetType(self, target) == ET_BUILDABLE && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
+    if(botTargetInAttackRange(self, target) && getTargetType(target) == ET_BUILDABLE && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
         return;
     
     //move forward
     botCmdBuffer->forwardmove = 127;
     
     //dodge if going toward enemy
-    if(self->client->ps.stats[STAT_PTEAM] != getTargetTeam(self, target) && getTargetTeam(self,target) != PTE_NONE) {
+    if(self->client->ps.stats[STAT_PTEAM] != getTargetTeam(target) && getTargetTeam(target) != PTE_NONE) {
         if(self->client->time1000 >= 500)
             botCmdBuffer->rightmove = 127;
         else
@@ -585,8 +579,9 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
         botCmdBuffer->upmove = -1;
     
     //stay away from enemy as human
+        getTargetPos(target, &tmpVec);
         if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-        DistanceSquared(self->s.pos.trBase,getTargetPos(target)) < Square(300) && botTargetInAttackRange(self, target) 
+        DistanceSquared(self->s.pos.trBase,tmpVec) < Square(300) && botTargetInAttackRange(self, target) 
         && getTargetTeam(target) == PTE_ALIENS)
         {
             botCmdBuffer->forwardmove = -100;
@@ -628,7 +623,7 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
 void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
     if(self->client->ps.weapon != WP_HBUILD)
         G_ForceWeaponChange( self, WP_HBUILD );
-    if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self, self->botMind->goal) ) {
+    if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self->botMind->goal) ) {
         self->botMind->followingRoute = qfalse;
         botFireWeapon( self, botCmdBuffer );
     } else
@@ -642,7 +637,9 @@ void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
  */
 void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
     
-    if(DistanceSquared(self->s.origin, getTargetPos(self->botMind->goal)) > MEDISTAT_RANGE)
+    vec3_t targetPos;
+    getTargetPos(self->botMind->goal, &targetPos);
+    if(DistanceSquared(self->s.origin, targetPos) > 70)
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     
 }
@@ -653,7 +650,10 @@ void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
-    if(DistanceSquared(self->s.pos.trBase, getTargetPos(self->botMind->goal)) > Square(100))
+    vec3_t targetPos;
+    int i;
+    getTargetPos(self->botMind->goal, &targetPos);
+    if(DistanceSquared(self->s.pos.trBase, targetPos) > Square(100))
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     else {
         // sell current weapon
@@ -726,9 +726,9 @@ void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
  * please only use if the bot can SEE his enemy (botTargetinRange == qtrue)
 */
 void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
-    vec3_t forward,right,up,muzzle;
+    vec3_t forward,right,up,muzzle, targetPos;
     AngleVectors(self->client->ps.viewangles, forward, right, up);
-    CalcMuzzlePoint(forward, right, up, muzzle);
+    CalcMuzzlePoint(self, forward, right, up, muzzle);
     switch(self->client->ps.stats[STAT_PCLASS]) {
         case PCL_ALIEN_LEVEL0:
         case PCL_ALIEN_LEVEL1:
@@ -741,8 +741,9 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
         case PCL_ALIEN_LEVEL3:
         case PCL_ALIEN_LEVEL3_UPG:
             self->botMind->followingRoute = qfalse;
+            getTargetPos(self->botMind->goal,&targetPos);
             //pounce to the target
-            if(DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) && 
+            if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                 self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                 //look up a bit more
                 botCmdBuffer->angles[YAW] += 10;
@@ -750,8 +751,9 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
             }
             break;
         case PCL_ALIEN_LEVEL4:
+            getTargetPos(self->botMind->goal, &targetPos);
             //use charge to approach more quickly
-            if (DistanceSquared( muzzle, getTargetPos(self->botMind->goal)) > Square(LEVEL4_CLAW_RANGE))
+            if (DistanceSquared( muzzle, targetPos) > Square(LEVEL4_CLAW_RANGE))
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
         default: break;
     }
@@ -786,7 +788,7 @@ int botGetAimEntityNumber(gentity_t *self) {
     CalcMuzzlePoint( self, forward, right, up , muzzle);
     VectorMA(muzzle, 4092, forward, end);
     
-    trap_Trace(&trace, muzzle, NULL, NULL, self->s.number, end, MASK_SHOT);
+    trap_Trace(&trace, muzzle, NULL, NULL, end, self->s.number, MASK_SHOT);
     return trace.entityNum;
 }
 /**botTargetInAttackRange
@@ -795,7 +797,7 @@ int botGetAimEntityNumber(gentity_t *self) {
 qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     float range,secondaryRange;
     vec3_t forward,right,up;
-    vec3_t muzzle;
+    vec3_t muzzle, targetPos;
     trace_t trace;
     AngleVectors( self->client->ps.viewangles, forward, right, up);
     
@@ -869,9 +871,10 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             range = 4098 * 4; //large range for guns because guns have large ranges :)
             secondaryRange = 0; //no secondary attack
     }
-    trap_Trace(&trace,muzzle,NULL,NULL,self->s.number,getTargetPos(target),MASK_SHOT);
-    if((DistanceSquared(muzzle,getTargetPos(target)) <= Square(range) 
-    || DistanceSquared(muzzle,getTargetPos(target)) <= Square(secondaryRange))
+    getTargetPos(target, &targetPos);
+    trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
+    if((DistanceSquared(muzzle,targetPos) <= Square(range) 
+    || DistanceSquared(muzzle,targetPos) <= Square(secondaryRange))
     && trace.fraction == 1.0f)
         return qtrue;
     else
@@ -882,8 +885,9 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
  */
 void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t forward,right,up;
-    vec3_t muzzle;
-    AngleVectors(self, forward,right,up);
+    vec3_t muzzle, targetPos;
+    getTargetPos(self->botMind->goal,&targetPos);
+    AngleVectors(self->client->ps.viewangles, forward,right,up);
     CalcMuzzlePoint(self,forward,right,up,muzzle);
     if( self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) {
         switch(self->client->ps.stats[STAT_PCLASS]) {
@@ -891,7 +895,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_GESTURE;
                 break;
             case PCL_ALIEN_BUILDER0_UPG:
-                if (DistanceSquared(muzzle, getTargetPos(self->botMind->goal)) < Square(ABUILDER_CLAW_RANGE))
+                if (DistanceSquared(muzzle, targetPos) < Square(ABUILDER_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK2;
                 else
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE;
@@ -902,7 +906,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
                 break;
             case PCL_ALIEN_LEVEL1_UPG:
-                if (DistanceSquared(muzzle, getTargetPos(self->botMind->goal)) <= Square(LEVEL1_CLAW_RANGE))
+                if (DistanceSquared(muzzle, targetPos) <= Square(LEVEL1_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //gas
@@ -911,13 +915,13 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
                 break;
             case PCL_ALIEN_LEVEL2_UPG:
-                if (DistanceSquared(muzzle, getTargetPos(self->botMind->goal) ) <= Square(LEVEL2_CLAW_RANGE))
+                if (DistanceSquared(muzzle, targetPos ) <= Square(LEVEL2_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //zap
                 break;
             case PCL_ALIEN_LEVEL3:
-                if(DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) && 
+                if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
                     botCmdBuffer->angles[YAW] += 10; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
@@ -926,10 +930,10 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 break;
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
-                    DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) )
+                    DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) )
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
                 else {       
-                    if(DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) > Square(LEVEL3_CLAW_RANGE) && 
+                    if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[YAW] += 10; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
@@ -938,7 +942,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 }
                 break;
             case PCL_ALIEN_LEVEL4:
-                if (DistanceSquared( muzzle, getTargetPos(self->botMind->goal)) > Square(LEVEL4_CLAW_RANGE))
+                if (DistanceSquared( muzzle, targetPos) > Square(LEVEL4_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //charge
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -950,7 +954,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
         if(self->client->ps.weapon == WP_FLAMER)
         {
             //only fire in range
-            if(DistanceSquared( muzzle, getTargetPos(self->botMind->goal) ) < Square(FLAMER_SPEED))
+            if(DistanceSquared( muzzle, targetPos ) < Square(FLAMER_SPEED))
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
             
         } else if( self->client->ps.weapon == WP_LUCIFER_CANNON ) {
@@ -977,11 +981,11 @@ int getTargetEntityNumber(botTarget_t target) {
     else
         return ENTITYNUM_NONE;
 }
-vec3_t getTargetPos(botTarget_t target) {
+void getTargetPos(botTarget_t target, vec3_t *rVec) {
     if(target.ent)
-        return target.ent->s.origin;
+        VectorCopy( target.ent->s.origin, *rVec);
     else
-        return target.coord;
+        VectorCopy(target.coord, *rVec);
 }
 int getTargetTeam( botTarget_t target) {
     if(target.ent) {
@@ -1010,7 +1014,6 @@ qboolean targetIsEntity( botTarget_t target) {
  */
 void setGoalEntity(gentity_t *self, gentity_t *goal ){
     self->botMind->goal.ent = goal;
-    self->botMind->goal.coord = NULL;
     findRouteToTarget(self, self->botMind->goal);
     setNewRoute(self);
 }
@@ -1020,7 +1023,7 @@ void setGoalEntity(gentity_t *self, gentity_t *goal ){
  * The goal is a coordinate
  */
 void setGoalCoordinate(gentity_t *self, vec3_t goal ) {
-    self->botMind->goal.coord = goal;
+    VectorCopy(goal,self->botMind->goal.coord);
     self->botMind->goal.ent = NULL;
     findRouteToTarget(self, self->botMind->goal);
     setNewRoute(self);
@@ -1031,14 +1034,13 @@ void setGoalCoordinate(gentity_t *self, vec3_t goal ) {
  */
 void setTargetEntity(botTarget_t *target, gentity_t *goal ){
     target->ent = goal;
-    target->coord = NULL;
 }
 /**setTargetCoordinate
  * Generic function for setting a botTarget that is not our current goal
  * Note, this function does not compute a route to the specified target
  */
 void setTargetCoordinate(botTarget_t *target, vec3_t goal ) {
-    target->coord = goal;
+    VectorCopy(goal, target->coord);
     target->ent = NULL;
 }
 
@@ -1118,7 +1120,7 @@ void G_BotSpectatorThink( gentity_t *self ) {
     
     //reset stuff
     self->botMind->followingRoute = qfalse;
-    setTargetEntity(self->botMind->goal, NULL);
+    setTargetEntity(&self->botMind->goal, NULL);
     self->botMind->state = FINDNEWNODE;
     
     if( self->client->sess.sessionTeam == TEAM_SPECTATOR ) {
@@ -1192,12 +1194,13 @@ void G_BotIntermissionThink( gclient_t *client )
 }
 void botGetAimLocation( botTarget_t target, vec3_t *aimLocation) {
     //get the position of the enemy
-    VectorCopy( getTargetPos(target), *aimLocation);
+    getTargetPos(target, aimLocation);
+    //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
-    if(getTargetType(target) != ET_BUILDABLE && getTargetTeam(target) == PTE_HUMANS)
-        (*aimLocation)[2] += target->r.maxs[2] * 0.85;
-    if(target->s.eType == ET_BUILDABLE) {
-        VectorCopy( target->s.origin, *aimLocation );
+    if(getTargetType(target) != ET_BUILDABLE && getTargetTeam(target) == PTE_HUMANS && getTargetEntityNumber(target) != ENTITYNUM_NONE)
+        (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].r.maxs[2] * 0.85;
+    if(getTargetType(target) == ET_BUILDABLE) {
+        VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
     }
 }
 
@@ -1252,14 +1255,12 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
 }
 //blatently ripped from ShotgunPattern() in g_weapon.c :)
 void botShakeAim( gentity_t *self, vec3_t *rVec ){
-    vec3_t aim;
     vec3_t forward, right, up;
-    float len, speedAngle;
-    float seed;
+    int seed;
     float r,u;
     
     //seed crandom
-    seed = rand() & 255;
+    seed = (int) rand() & 255;
     r = Q_crandom(&seed) * self->botMind->botSkill.aimShake * 16;
     u = Q_crandom(&seed) * self->botMind->botSkill.aimShake * 16;
     VectorMA(self->s.origin, 8192 * 16, forward, *rVec);
@@ -1278,6 +1279,8 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
     vec3_t range;
     vec3_t mins, maxs;
     gentity_t *target;
+    botTarget_t botTarget;
+    
     VectorSet( range, vectorRange, vectorRange, vectorRange );
     VectorAdd( self->client->ps.origin, range, maxs );
     VectorSubtract( self->client->ps.origin, range, mins );
@@ -1287,13 +1290,14 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
     
     for( i = 0; i < total_entities; ++i ) {
         target = &g_entities[entityList[ i ] ];
+        setTargetEntity(&botTarget, target);
         //DistanceSquared for performance reasons (doing sqrt constantly is bad and keeping it squared does not change result)
         newDistance = (float) DistanceSquared( self->s.pos.trBase, target->s.pos.trBase );
         //if entity is closer than previous stored one and the target is alive
         if( newDistance < minDistance && target->health > 0) {
             
             //if we can see the entity OR we are on aliens (who dont care about LOS because they have radar)
-            if( (self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) || botTargetInRange(self, target) ){
+            if( (self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) || botTargetInRange(self, botTarget) ){
                 
                 //if the entity is a building and we can attack structures and we are not a dretch
                 if(target->s.eType == ET_BUILDABLE && g_bot_attackStruct.integer && self->client->ps.stats[STAT_PCLASS] != PCL_ALIEN_LEVEL0) {
@@ -1325,18 +1329,15 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
 qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
     trace_t trace;
     gentity_t *traceEnt;
-    vec3_t  muzzle;
+    vec3_t  muzzle, targetPos;
     vec3_t  forward, right, up;
-    
-    if( !self || !target )
-        return qfalse;
 
     // set aiming directions
     AngleVectors( self->client->ps.viewangles, forward, right, up );
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
-
-    trap_Trace( &trace, muzzle, NULL, NULL, getTargetPos(target), self->s.number, MASK_SHOT );
+    getTargetPos(target, &targetPos);
+    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, MASK_SHOT );
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
@@ -1435,7 +1436,7 @@ void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     int closestNode = findClosestNode(self->s.pos.trBase);
     self->botMind->lastNodeID = -1;
     if(closestNode != -1) {
-    self->botMind->targetNode = closestNode;
+    self->botMind->targetNodeID = closestNode;
     self->botMind->timeFoundNode = level.time;
     } else {
         self->botMind->state = LOST;
@@ -1453,18 +1454,18 @@ void findNextNode( gentity_t *self )
         int i,nextNode = 0;
         int possibleNextNode = 0;
         int possibleNodes[5];
-        int lasttarget = self->botMind->targetNode;
+        int lasttarget = self->botMind->targetNodeID;
         possibleNodes[0] = possibleNodes[1] = possibleNodes[2] = possibleNodes[3] = possibleNodes[4] = 0;
         if(!self->botMind->followingRoute) {
             for(i = 0; i < 5; i++) {
-                    if(level.nodes[self->botMind->targetNode].nextid[i] < level.numNodes &&
-                    level.nodes[self->botMind->targetNode].nextid[i] >= 0) {
+                    if(level.nodes[self->botMind->targetNodeID].nextid[i] < level.numNodes &&
+                    level.nodes[self->botMind->targetNodeID].nextid[i] >= 0) {
                             if(self->botMind->lastNodeID >= 0) {
-                                    if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNode].nextid[i]) {
+                                    if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNodeID].nextid[i]) {
                                             continue;
                                     }
                             }
-                            possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNode].nextid[i];
+                            possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNodeID].nextid[i];
                             possibleNextNode++;
                     }
             }
@@ -1474,7 +1475,7 @@ void findNextNode( gentity_t *self )
             }
             else {
                     self->botMind->state = TARGETNODE;
-                    if(level.nodes[self->botMind->targetNode].random < 0) {
+                    if(level.nodes[self->botMind->targetNodeID].random < 0) {
                             nextNode = 0;
                     }
                     else {
@@ -1484,10 +1485,10 @@ void findNextNode( gentity_t *self )
                             //if(nextpath == possiblenextpath)
                             //{nextpath = possiblenextpath - 1;}
                     }
-                    self->botMind->lastNodeID = self->botMind->targetNode;
+                    self->botMind->lastNodeID = self->botMind->targetNodeID;
                     self->botMind->targetNodeID = possibleNodes[nextNode];
                     for(i = 0;i < 5;i++) {
-                            if(level.nodes[self->botMind->targetNode].nextid[i] == lasttarget) {
+                            if(level.nodes[self->botMind->targetNodeID].nextid[i] == lasttarget) {
                                     i = 5;
                             }
                     }
@@ -1496,81 +1497,14 @@ void findNextNode( gentity_t *self )
                     return;
             }
         } else {
-            self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNode];
+            self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNodeID];
             self->botMind->timeFoundNode = level.time;
             self->botMind->state = TARGETNODE;
         }
             
         return;
 }
-void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer )
-{
-    vec3_t tmpVec;
-    switch(self->botMind->state) {
-        case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
-        case FINDNEXTNODE: findNextNode(self); break;
-        case TARGETNODE:break; //basically used as a flag that is checked elsewhere
-        case LOST: findNewNode(self, botCmdBuffer);break; //This should never happen unless there are 0 waypoints on the map
-        case TARGETOBJECTIVE: break;
-        default: break;
-    }
-    if(self->botMind->state == TARGETNODE && (self->botMind->followingRoute || g_bot_roam.integer == 1)) {
-                #ifdef BOT_DEBUG
-                trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
-                #endif
-                botSlowAim(self, level.nodes[self->botMind->targetNode].coord, 0.5, &tmpVec);
-                botAimAtLocation(self, tmpVec, botCmdBuffer);
-                G_BotMove( self, botCmdBuffer );
-                if(self->botMind->lastNodeID >= 0 ) {
-                        switch(level.nodes[self->botMind->lastNodeID].action) {
-                                case BOT_JUMP:  
-                                    
-                                    if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-                                        self->client->ps.stats[ STAT_STAMINA ] < 0 )
-                                    {break;}
-                                    if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
-                                        
-                                        botCmdBuffer->upmove = 20;
-                                    
-                                    
-                                    break;
-                                case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
-                                    botCmdBuffer->upmove = -1;
-                                }
-                                break;
-                                case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS) {
-                                    botCmdBuffer->upmove = -1;
-                                }
-                                break;
-                                case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
-                                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
-                                    botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                                    else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
-                                        self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
-                                        botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                                    break;
-                                default: break;
-                        }
-                        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
-                                self->botMind->state = FINDNEWNODE;
-                                self->botMind->timeFoundNode = level.time;
-                        }
-                }
-                else if( level.time - self->botMind->timeFoundNode > 10000 ) {
-                        self->botMind->state = FINDNEWNODE;
-                        self->botMind->timeFoundNode = level.time;
-                }
-                if(distanceToTargetNode(self) < 70) {
-                        self->botMind->state = FINDNEXTNODE;
-                        self->botMind->timeFoundNode = level.time;
-                }
-                //if we have reached the end of the route
-                if(self->botMind->targetNode == -1 && self->botMind->followingRoute) {
-                    self->botMind->followingRoute = qfalse; //say we are no longer following the route
-                }
 
-        }
-}
 
 void setNewRoute(gentity_t *self) { 
     self->botMind->timeFoundNode = level.time;
@@ -1593,13 +1527,11 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     vec3_t start = {0,0,0}; 
     vec3_t end = {0,0,0};
     vec3_t  forward, right, up;
-    vec3_t firstNodeDirection,secondNodeDirection;
     trace_t trace, trace2;
     
     AngleVectors( self->client->ps.viewangles, forward, right, up );
     CalcMuzzlePoint( self, forward, right, up, start);
-    
-    VectorCopy( getTargetPos(target), end);
+    getTargetPos(target , &end);
     
     //set initial variable values
     for( i=0;i<MAX_NODES;i++) {
@@ -1646,10 +1578,10 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
         
         //can we see the second node?
-        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToGoal[startNum]].coord, MASK_SHOT);
+        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
         
         //check if we are blocked from getting there
-        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToGoal[startNum]].coord, MASK_SHOT);
+        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
         if(trace.fraction == 1.0f && trace2.fraction == 1.0f)

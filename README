@@ -8,5 +8,4 @@ Fix longstanding bugs
 Improve the design and extensibility of the code
 Be a much better "base" for even more advanced bots in the future
 
-Currently, most of the bot's functions have been reimplemented in the new design sceme, but 
-some things (roaming) are missing and the code does not compile yet.
+Currently, the bot is finished, but needs testing and bugs ironed out
