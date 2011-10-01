@@ -651,7 +651,7 @@ void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
     
     vec3_t targetPos;
     getTargetPos(self->botMind->goal, &targetPos);
-    if(DistanceSquared(self->s.origin, targetPos) > 70)
+    if(DistanceSquared(self->s.origin, targetPos) > Square(50))
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     
 }
