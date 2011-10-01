@@ -1084,7 +1084,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
           
           //if( bottext 
         //tmptext = chatText;
-        if( !Q_stricmpn(tmptext, "follow me", 9) && ent->client->pers.teamSelection != PTE_NONE )
+        /*if( !Q_stricmpn(tmptext, "follow me", 9) && ent->client->pers.teamSelection != PTE_NONE )
         {
             //botname = Com_SkipTokens(tmptext, 2, " ");
             G_SayArgv( 3, botname, sizeof( botname ) );
@@ -1109,7 +1109,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
                   if( player->r.svFlags & SVF_BOT && player->client->ps.stats[STAT_PTEAM] == ent->client->ps.stats[STAT_PTEAM])
                     G_BotCmd(ent, pids[ i ], "defensive");
                 }
-        }
+        }*/
         
       break;
 

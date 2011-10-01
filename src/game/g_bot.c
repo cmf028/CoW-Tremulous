@@ -1352,7 +1352,6 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
 
 qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
     trace_t trace;
-    gentity_t *traceEnt;
     vec3_t  muzzle, targetPos;
     vec3_t  forward, right, up;
 
