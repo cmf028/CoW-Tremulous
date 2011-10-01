@@ -596,7 +596,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     //stay away from enemy as human
         getTargetPos(target, &tmpVec);
         if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-        DistanceSquared(self->s.pos.trBase,tmpVec) < Square(300) && botTargetInAttackRange(self, target) 
+        DistanceSquared(self->s.pos.trBase,tmpVec) < Square(300) && botTargetInAttackRange(self, target) && self->s.weapon != WP_PAIN_SAW
         && getTargetTeam(target) == PTE_ALIENS)
         {
             botCmdBuffer->forwardmove = -100;
@@ -782,6 +782,12 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
             //use charge to approach more quickly
             if (DistanceSquared( muzzle, targetPos) > Square(LEVEL4_CLAW_RANGE))
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
+            break;
+        case PCL_HUMAN:
+        case PCL_HUMAN_BSUIT:
+            if(self->s.weapon == WP_PAIN_SAW) //we ALWAYS want psaw users to fire, otherwise they only fire intermittently
+                botFireWeapon(self, botCmdBuffer);
+            break;
         default: break;
     }
         
@@ -872,6 +878,10 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             break;
         case WP_HBUILD:
             range = 100;
+            secondaryRange = 0;
+            break;
+        case WP_PAIN_SAW:
+            range = PAINSAW_RANGE;
             secondaryRange = 0;
             break;
         case WP_FLAMER:
@@ -1617,10 +1627,10 @@ void setSkill(gentity_t *self, int skill) {
     //different aim for different teams
     if(self->botMind->botTeam == PTE_HUMANS) {
         self->botMind->botSkill.aimSlowness = (float) skill / 80;
-        self->botMind->botSkill.aimShake = (int) (10 - skill)/2 + 0.5;
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     } else {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
-        self->botMind->botSkill.aimShake = (int) (10 - skill)/2 + .05;
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
 }
     
