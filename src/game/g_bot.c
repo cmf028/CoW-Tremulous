@@ -363,8 +363,8 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         
         else if( level.time - self->botMind->timeFoundNode > 10000 )
         {
-            self->botMind->state = FINDNEWNODE;
-            self->botMind->timeFoundNode = level.time;
+            findRouteToTarget(self, self->botMind->goal);
+            setNewRoute(self);
         }
         if(distanceToTargetNode(self) < 70)
         {
