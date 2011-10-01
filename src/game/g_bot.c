@@ -242,12 +242,12 @@ void G_BotThink( gentity_t *self) {
     botCmdBuffer.rightmove = 0;
     
     //use medkit when hp is low
-    if(self->health <= BOT_USEMEDKIT_HP)
+    if(self->health < BOT_USEMEDKIT_HP && BG_InventoryContainsUpgrade(UP_MEDKIT,self->client->ps.stats))
         BG_ActivateUpgrade(UP_MEDKIT,self->client->ps.stats);
     
     //try to evolve every so often (aliens only)
-    if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
-        G_BotEvolve(self,&botCmdBuffer);
+    //if(g_bot_evolve.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS && self->client->ps.persistant[PERS_CREDIT] > 0)
+        //G_BotEvolve(self,&botCmdBuffer);
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
         case ATTACK:
@@ -263,6 +263,7 @@ void G_BotThink( gentity_t *self) {
         case ROAM:
             G_BotRoam(self, &botCmdBuffer);
     }
+    self->client->pers.cmd =botCmdBuffer;
 }
 /**G_BotModusManager
  * Changes the bot's current Modus based on the surrounding conditions
@@ -276,11 +277,11 @@ void G_BotModusManager( gentity_t *self ) {
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
     
     //search for a new enemy every so often
-    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
+   if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
         enemyIndex = botFindClosestEnemy(self, qfalse);
     
     //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
-    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && enemyIndex == ENTITYNUM_NONE)
+    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK)
         enemyIndex = getTargetEntityNumber(self->botMind->goal);
     
    
@@ -597,11 +598,12 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
 void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
     
     //switch to blaster
-    if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
+    /*if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
-        G_ForceWeaponChange( self, WP_BLASTER );
+        G_ForceWeaponChange( self, WP_BLASTER );*/
     
     if(botTargetInAttackRange(self, self->botMind->goal)) {
+        
         self->botMind->followingRoute = qfalse;
         botFireWeapon(self, botCmdBuffer);
     } else if(botTargetInRange(self, self->botMind->goal)) {
@@ -611,7 +613,7 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
         findRouteToTarget(self, self->botMind->goal);
         setNewRoute(self);
     }
-    
+    self->botMind->enemyLastSeen = level.time;
     G_BotMoveDirectlyToGoal(self, botCmdBuffer);
 }
 /**
@@ -621,7 +623,7 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
-    if(self->client->ps.weapon != WP_HBUILD)
+    if(self->client->ps.weapon != WP_HBUILD && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats))
         G_ForceWeaponChange( self, WP_HBUILD );
     if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self->botMind->goal) ) {
         self->botMind->followingRoute = qfalse;
@@ -875,7 +877,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     if((DistanceSquared(muzzle,targetPos) <= Square(range) 
     || DistanceSquared(muzzle,targetPos) <= Square(secondaryRange))
-    && trace.fraction == 1.0f)
+    &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f))
         return qtrue;
     else
         return qfalse;
@@ -1342,10 +1344,10 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
 
-    traceEnt = &g_entities[ trace.entityNum ];
+    //traceEnt = &g_entities[ trace.entityNum ];
         
     //target is in range
-    if( traceEnt == &g_entities[getTargetEntityNumber(target)] || trace.fraction == 1.0f )
+    if( trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f )
         return qtrue;
     return qfalse;
 }
