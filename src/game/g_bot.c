@@ -878,10 +878,6 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             range = FLAMER_SPEED;
             secondaryRange = 0;
             break;
-        case WP_PAIN_SAW:
-            range = PAINSAW_RANGE;
-            secondaryRange = 0;
-            break;
         case WP_SHOTGUN:
             range = (100 * 8192)/SHOTGUN_SPREAD; //100 is the maximum radius we want the spread to be
             secondaryRange = 0;
