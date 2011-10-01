@@ -616,19 +616,25 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
         || self->client->ps.weapon == WP_HBUILD) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
         G_ForceWeaponChange( self, WP_BLASTER );
     
+    
     if(botTargetInAttackRange(self, self->botMind->goal)) {
         
         self->botMind->followingRoute = qfalse;
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         botFireWeapon(self, botCmdBuffer);
     } else if(botTargetInRange(self, self->botMind->goal)) {
         self->botMind->enemyLastSeen = level.time;
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         G_BotReactToEnemy(self, botCmdBuffer);
     } else if(!self->botMind->followingRoute){
         findRouteToTarget(self, self->botMind->goal);
         setNewRoute(self);
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
+    } else {
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     }
     self->botMind->enemyLastSeen = level.time;
-    G_BotMoveDirectlyToGoal(self, botCmdBuffer);
+    
 }
 /**
  * G_BotRepair
@@ -762,7 +768,7 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
             if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                 self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                 //look up a bit more
-                botCmdBuffer->angles[YAW] += 10;
+                botCmdBuffer->angles[PITCH] -= 3000.0f;
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
             }
             break;
@@ -849,11 +855,11 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             break;
         case WP_ALEVEL3:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 300; //An arbitrary value for pounce, has nothing to do with actual range
+            secondaryRange = 900; //An arbitrary value for pounce, has nothing to do with actual range
             break;
         case WP_ALEVEL3_UPG:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 300; //An arbitrary value for pounce and barbs, has nothing to do with actual range
+            secondaryRange = 900; //An arbitrary value for pounce and barbs, has nothing to do with actual range
             break;
         case WP_ALEVEL4:
             range = LEVEL4_CLAW_RANGE;
@@ -890,7 +896,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     getTargetPos(target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     if((DistanceSquared(muzzle,targetPos) <= Square(range) 
-    || DistanceSquared(muzzle,targetPos) <= Square(secondaryRange))
+    || (DistanceSquared(muzzle,targetPos) <= Square(secondaryRange) && DistanceSquared(muzzle,targetPos) > Square((secondaryRange - range)/2)))
     &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid)
         return qtrue;
     else
@@ -939,7 +945,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3:
                 if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                    botCmdBuffer->angles[YAW] += 10; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= 3000.0f; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                 } else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -951,7 +957,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 else {       
                     if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                        botCmdBuffer->angles[YAW] += 10; //look up a bit more
+                        botCmdBuffer->angles[PITCH] -= 3000.0f; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                     }else
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
