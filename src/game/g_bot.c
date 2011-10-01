@@ -252,16 +252,21 @@ void G_BotThink( gentity_t *self) {
     switch(self->botMind->currentModus) {
         case ATTACK:
             G_BotAttack(self, &botCmdBuffer);
+            break;
         case BUILD:
            // G_BotBuild(self, &botCmdBuffer);
         case BUY:
             G_BotBuy(self, &botCmdBuffer);
+            break;
         case HEAL:
             G_BotHeal(self, &botCmdBuffer);
+            break;
         case REPAIR:
             G_BotRepair(self, &botCmdBuffer);
+            break;
         case ROAM:
             G_BotRoam(self, &botCmdBuffer);
+            break;
     }
     self->client->pers.cmd =botCmdBuffer;
 }
@@ -271,7 +276,7 @@ void G_BotThink( gentity_t *self) {
  */
 void G_BotModusManager( gentity_t *self ) {
     
-    int enemyIndex = ENTITYNUM_NONE;
+    int enemyIndex = botFindClosestEnemy(self, qfalse);
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
@@ -288,21 +293,24 @@ void G_BotModusManager( gentity_t *self ) {
     
     if(enemyIndex != ENTITYNUM_NONE) {
         self->botMind->currentModus = ATTACK;
-        if(enemyIndex != getTargetEntityNumber(self->botMind->goal))
+        if(enemyIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[enemyIndex]);
+        }
     } else if(damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
         self->botMind->currentModus = REPAIR;
-        if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal))
+        if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[damagedBuildingIndex]);
-    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) 
-    && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
+        }
+    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         self->botMind->currentModus = HEAL;
-        if(medistatIndex != getTargetEntityNumber(self->botMind->goal))
+        if(medistatIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[medistatIndex]);
+        }
     } else if(armouryIndex != ENTITYNUM_NONE && botNeedsItem(self) && g_bot_buy.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         self->botMind->currentModus = BUY;
-        if(armouryIndex != getTargetEntityNumber(self->botMind->goal))
+        if(armouryIndex != getTargetEntityNumber(self->botMind->goal)) {
             setGoalEntity(self, &g_entities[armouryIndex]);
+        }
     } else if(g_bot_roam.integer > 0){
         self->botMind->currentModus = ROAM;
     }
@@ -367,12 +375,10 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         //our route has ended or we have been told to quit following it 
         //can we see the goal? Then go directly to it. Else find a new route and folow it
-    } else if(botTargetInRange(self, self->botMind->goal)) {
-        G_BotGoto(self,self->botMind->goal,botCmdBuffer);
     } else {
-        findRouteToTarget(self, self->botMind->goal);
-        setNewRoute(self);
+        G_BotGoto(self,self->botMind->goal,botCmdBuffer);
     }
+    
 }
 
 /**G_BotSearchForGoal
@@ -1257,15 +1263,20 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
 }
 //blatently ripped from ShotgunPattern() in g_weapon.c :)
 void botShakeAim( gentity_t *self, vec3_t *rVec ){
-    vec3_t forward, right, up;
+    vec3_t forward, right, up, diffVec;
     int seed;
-    float r,u;
-    
+    float r,u, length, speedAngle;
+    AngleVectors(self->client->ps.viewangles, forward, right, up);
     //seed crandom
     seed = (int) rand() & 255;
-    r = Q_crandom(&seed) * self->botMind->botSkill.aimShake * 16;
-    u = Q_crandom(&seed) * self->botMind->botSkill.aimShake * 16;
-    VectorMA(self->s.origin, 8192 * 16, forward, *rVec);
+    //Distance(self->s.origin, *rVec)/8192;
+    //int shakeMag = 8192 / self->botMind->botSkill.aimShake
+    VectorSubtract(*rVec,self->s.origin, diffVec);
+    length = (float) VectorLength(diffVec)/1000;
+    VectorNormalize(diffVec);
+    speedAngle=RAD2DEG(acos(DotProduct(forward,diffVec)))/100;
+    r = crandom() * self->botMind->botSkill.aimShake * length * speedAngle;
+    u = crandom() * self->botMind->botSkill.aimShake * length * speedAngle;
     VectorMA(*rVec, r, right, *rVec);
     VectorMA(*rVec,u,up,*rVec);
 }
@@ -1339,7 +1350,7 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     getTargetPos(target, &targetPos);
-    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, MASK_SHOT );
+    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, MASK_SHOT);
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
@@ -1596,10 +1607,10 @@ void setSkill(gentity_t *self, int skill) {
     //different aim for different teams
     if(self->botMind->botTeam == PTE_HUMANS) {
         self->botMind->botSkill.aimSlowness = (float) skill / 80;
-        self->botMind->botSkill.aimShake = (int) 100 * (10 - skill) + 0.5;
+        self->botMind->botSkill.aimShake = (int) (10 - skill)/2 + 0.5;
     } else {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
-        self->botMind->botSkill.aimShake = (int) 50 * (10 - skill) + .05;
+        self->botMind->botSkill.aimShake = (int) (10 - skill)/2 + .05;
     }
 }
     
