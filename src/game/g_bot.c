@@ -883,7 +883,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     if((DistanceSquared(muzzle,targetPos) <= Square(range) 
     || DistanceSquared(muzzle,targetPos) <= Square(secondaryRange))
-    &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f))
+    &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid)
         return qtrue;
     else
         return qfalse;
@@ -1358,7 +1358,7 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
     //traceEnt = &g_entities[ trace.entityNum ];
         
     //target is in range
-    if( trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f )
+    if( (trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid )
         return qtrue;
     return qfalse;
 }
@@ -1451,6 +1451,7 @@ void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     if(closestNode != -1) {
     self->botMind->targetNodeID = closestNode;
     self->botMind->timeFoundNode = level.time;
+    self->botMind->state = TARGETNODE;
     } else {
         self->botMind->state = LOST;
         botCmdBuffer->forwardmove = 0;
@@ -1469,7 +1470,6 @@ void findNextNode( gentity_t *self )
         int possibleNodes[5];
         int lasttarget = self->botMind->targetNodeID;
         possibleNodes[0] = possibleNodes[1] = possibleNodes[2] = possibleNodes[3] = possibleNodes[4] = 0;
-        if(!self->botMind->followingRoute) {
             for(i = 0; i < 5; i++) {
                     if(level.nodes[self->botMind->targetNodeID].nextid[i] < level.numNodes &&
                     level.nodes[self->botMind->targetNodeID].nextid[i] >= 0) {
@@ -1509,11 +1509,6 @@ void findNextNode( gentity_t *self )
                     self->botMind->timeFoundNode = level.time;
                     return;
             }
-        } else {
-            self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNodeID];
-            self->botMind->timeFoundNode = level.time;
-            self->botMind->state = TARGETNODE;
-        }
             
         return;
 }
@@ -1597,7 +1592,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
-        if(trace.fraction == 1.0f && trace2.fraction == 1.0f)
+        if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
             self->botMind->startNodeID = self->botMind->routeToTarget[startNum];
         else //nope, start with the first node
             self->botMind->startNodeID = startNum;
