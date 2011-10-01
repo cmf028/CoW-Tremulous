@@ -335,6 +335,10 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
                 if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
                     self->client->ps.stats[ STAT_STAMINA ] < 0 )
                 {break;}
+                if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
+                    
+                    botCmdBuffer->upmove = 20;
+                break;
             //we should not need this now that wallclimb is always enabled in G_BotGoto
             case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
                 botCmdBuffer->upmove = -1;
