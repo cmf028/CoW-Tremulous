@@ -276,7 +276,7 @@ void G_BotThink( gentity_t *self) {
  */
 void G_BotModusManager( gentity_t *self ) {
     
-    int enemyIndex = botFindClosestEnemy(self, qfalse);
+    int enemyIndex = ENTITYNUM_NONE;
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
@@ -286,7 +286,7 @@ void G_BotModusManager( gentity_t *self ) {
         enemyIndex = botFindClosestEnemy(self, qfalse);
     
     //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
-    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && g_entities[getTargetEntityNumber(self->botMind->goal)].health > 0)
+    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && g_entities[getTargetEntityNumber(self->botMind->goal)].health > 0 && enemyIndex == ENTITYNUM_NONE)
         enemyIndex = getTargetEntityNumber(self->botMind->goal);
     
    
