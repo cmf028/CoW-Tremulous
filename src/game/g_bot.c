@@ -629,7 +629,7 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
-    if(self->client->ps.weapon != WP_HBUILD && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats))
+    if(self->client->ps.weapon != WP_HBUILD)
         G_ForceWeaponChange( self, WP_HBUILD );
     if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self->botMind->goal) ) {
         self->botMind->followingRoute = qfalse;
