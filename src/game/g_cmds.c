@@ -1015,12 +1015,13 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
   // don't let text be too long for malicious reasons
   char        text[ MAX_SAY_TEXT ];
   char        location[ 64 ];
+  /*
   char        tmptext[100];
   char        *botname;
   char        *botname_s = {""};
   int  pids[ MAX_CLIENTS ];
   int i;
-  gentity_t   *player;
+  gentity_t   *player;*/
   // Bail if the text is blank.
   if( ! chatText[0] )
      return;
