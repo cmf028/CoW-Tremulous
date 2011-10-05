@@ -61,7 +61,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range);
 int findClosestNode( vec3_t start );
 void findNextNode( gentity_t *self );
 void findNewNode( gentity_t *self , usercmd_t *botCmdBuffer);
-void pathfinding( gentity_t *self, usercmd_t *botCmdBuffer );
+void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer);
 int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );
 void setNewRoute(gentity_t *self);

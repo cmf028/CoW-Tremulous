@@ -327,40 +327,8 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
     if(self->botMind->followingRoute && self->botMind->targetNodeID != -1) {
         setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
         G_BotGoto( self, self->botMind->targetNode, botCmdBuffer );
+        doLastNodeAction(self, botCmdBuffer);
         
-        switch(level.nodes[self->botMind->lastNodeID].action)
-        {
-            case BOT_JUMP:  
-                
-                if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-                    self->client->ps.stats[ STAT_STAMINA ] < 0 )
-                {break;}
-                if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
-                    
-                    botCmdBuffer->upmove = 20;
-                break;
-            //we should not need this now that wallclimb is always enabled in G_BotGoto
-            case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
-                botCmdBuffer->upmove = -1;
-            }
-            break;
-            case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS)
-            {
-                botCmdBuffer->upmove = -1;
-            }
-            break;
-            case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
-                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
-                botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                }else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
-                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
-                    botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                }
-                break;
-            default: break;
-        }
         //apparently, we are stuck, so find a new route to the goal and use that
         if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout)
         {
@@ -470,8 +438,6 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 }*/
 //using PBot Code for now..
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
-    vec3_t targetPos;
-    getTargetPos(self->botMind->goal,&targetPos);
     switch(self->botMind->state) {
         case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
         case FINDNEXTNODE: findNextNode(self); break;
@@ -488,38 +454,7 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
         G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
         
         if(self->botMind->lastNodeID >= 0 ) {
-            switch(level.nodes[self->botMind->lastNodeID].action) {
-                case BOT_JUMP:  
-                    
-                    if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-                        self->client->ps.stats[ STAT_STAMINA ] < 0 )
-                    {break;}
-                    if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
-                        
-                        botCmdBuffer->upmove = 20;
-                    
-                    
-                    break;
-                case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
-                    botCmdBuffer->upmove = -1;
-                }
-                break;
-                case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS) {
-                    botCmdBuffer->upmove = -1;
-                }
-                break;
-                case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
-                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
-                    botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                } else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
-                        self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
-                        botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                }
-                    break;
-                default: break;
-            }
+            doLastNodeAction(self, botCmdBuffer);
             if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
                 self->botMind->state = FINDNEWNODE;
                 self->botMind->timeFoundNode = level.time;
@@ -1533,7 +1468,44 @@ void findNextNode( gentity_t *self )
         return;
 }
 
-
+void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
+    vec3_t targetPos;
+    getTargetPos(self->botMind->goal,&targetPos);
+    switch(level.nodes[self->botMind->lastNodeID].action)
+    {
+        case BOT_JUMP:  
+            
+            if( self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
+                self->client->ps.stats[ STAT_STAMINA ] < 0 )
+            {break;}
+            if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) )
+                
+                botCmdBuffer->upmove = 20;
+            break;
+            //we should not need this now that wallclimb is always enabled in G_BotGoto
+        case BOT_WALLCLIMB: if( BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER ) ) {
+            botCmdBuffer->upmove = -1;
+        }
+        break;
+        case BOT_KNEEL: if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS)
+        {
+            botCmdBuffer->upmove = -1;
+        }
+        break;
+        case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
+            self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
+            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->buttons |= BUTTON_ATTACK2;
+            }else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
+                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
+            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->buttons |= BUTTON_ATTACK2;
+                }
+                break;
+        default: break;
+    }
+    
+}
 void setNewRoute(gentity_t *self) { 
     self->botMind->timeFoundNode = level.time;
     self->botMind->lastNodeID = self->botMind->targetNodeID;
