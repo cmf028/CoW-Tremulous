@@ -322,6 +322,8 @@ void G_BotModusManager( gentity_t *self ) {
 */
 void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
     
+    vec3_t targetPos;
+    getTargetPos(self->botMind->goal, &targetPos);
     if(self->botMind->followingRoute && self->botMind->targetNodeID != -1) {
         setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
         G_BotGoto( self, self->botMind->targetNode, botCmdBuffer );
@@ -348,11 +350,14 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
             }
             break;
             case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
-                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
+                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
+                Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
-                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
+                }else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
+                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
+                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
                     botCmdBuffer->buttons |= BUTTON_ATTACK2;
+                }
                 break;
             default: break;
         }
@@ -465,6 +470,8 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 }*/
 //using PBot Code for now..
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
+    vec3_t targetPos;
+    getTargetPos(self->botMind->goal,&targetPos);
     switch(self->botMind->state) {
         case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
         case FINDNEXTNODE: findNextNode(self); break;
@@ -502,11 +509,14 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
                 }
                 break;
                 case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
-                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED)
+                    self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
+                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
                     botCmdBuffer->buttons |= BUTTON_ATTACK2;
-                    else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
-                        self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED)
+                } else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
+                        self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
+                    Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0];
                         botCmdBuffer->buttons |= BUTTON_ATTACK2;
+                }
                     break;
                 default: break;
             }
@@ -941,7 +951,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3:
                 if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                 } else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -949,12 +959,12 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
                     DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) ) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[0]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
                 } else {       
                     if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                        botCmdBuffer->angles[PITCH] -= 3000.0f; //look up a bit more
+                        botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH];; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                     }else
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
