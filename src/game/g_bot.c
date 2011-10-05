@@ -848,6 +848,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             secondaryRange = 0; //no secondary attack
     }
     getTargetPos(target, &targetPos);
+    botGetAimLocation(target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     distance = DistanceSquared(self->s.pos.trBase, targetPos);
     distance = (int) distance - myMax/2 - targetMax/2;
@@ -864,7 +865,22 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
 void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t forward,right,up;
     vec3_t muzzle, targetPos;
+    vec3_t myMaxs,targetMaxs;
+    int distance, myMax,targetMax;
+    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], NULL, myMaxs, NULL, NULL, NULL);
+    
+    if(targetIsEntity(self->botMind->goal) && self->botMind->goal.ent->client)
+        BG_FindBBoxForClass(self->botMind->goal.ent->client->ps.stats[STAT_PCLASS], NULL,targetMaxs, NULL, NULL, NULL);
+    else if(targetIsEntity(self->botMind->goal) && getTargetType(self->botMind->goal) == ET_BUILDABLE)
+        BG_FindBBoxForBuildable(self->botMind->goal.ent->s.modelindex, NULL, targetMaxs);
+    else 
+        VectorSet(targetMaxs, 0, 0, 0);
+    targetMax = VectorLengthSquared(targetMaxs);
+    myMax = VectorLengthSquared(myMaxs);
     getTargetPos(self->botMind->goal,&targetPos);
+    distance = DistanceSquared(self->s.pos.trBase, targetPos);
+    distance = (int) distance - myMax/2 - targetMax/2;
+    
     AngleVectors(self->client->ps.viewangles, forward,right,up);
     CalcMuzzlePoint(self,forward,right,up,muzzle);
     if( self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) {
@@ -873,7 +889,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_GESTURE;
                 break;
             case PCL_ALIEN_BUILDER0_UPG:
-                if (DistanceSquared(muzzle, targetPos) < Square(ABUILDER_CLAW_RANGE))
+                if(distance < Square(ABUILDER_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK2;
                 else
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE;
@@ -884,7 +900,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
                 break;
             case PCL_ALIEN_LEVEL1_UPG:
-                if (DistanceSquared(muzzle, targetPos) <= Square(LEVEL1_CLAW_RANGE))
+                if(distance <= Square(LEVEL1_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //gas
@@ -893,13 +909,13 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
                 break;
             case PCL_ALIEN_LEVEL2_UPG:
-                if (DistanceSquared(muzzle, targetPos ) <= Square(LEVEL2_CLAW_RANGE))
+                if(distance <= Square(LEVEL2_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //zap
                 break;
             case PCL_ALIEN_LEVEL3:
-                if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
+                if(distance > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
                     botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
@@ -908,11 +924,11 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 break;
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
-                    DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) ) {
+                    distance > Square(LEVEL3_CLAW_RANGE) ) {
                     botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
                 } else {       
-                    if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
+                    if(distance > Square(LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH];; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
@@ -921,7 +937,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 }
                 break;
             case PCL_ALIEN_LEVEL4:
-                if (DistanceSquared( muzzle, targetPos) > Square(LEVEL4_CLAW_RANGE))
+                if (distance > Square(LEVEL4_CLAW_RANGE))
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //charge
                 else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -932,8 +948,6 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
     } else if( self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS ) {
         if(self->client->ps.weapon == WP_FLAMER)
         {
-            //only fire in range
-            if(DistanceSquared( muzzle, targetPos ) < Square(FLAMER_SPEED))
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
             
         } else if( self->client->ps.weapon == WP_LUCIFER_CANNON ) {
