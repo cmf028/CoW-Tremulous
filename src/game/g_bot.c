@@ -894,7 +894,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
                     DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) ) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 10 - self->client->ps.delta_angles[PITCH]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
                 } else {       
                     if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
