@@ -761,10 +761,23 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     float range,secondaryRange;
     vec3_t forward,right,up;
     vec3_t muzzle, targetPos;
+    vec3_t myMaxs, targetMaxs;
     trace_t trace;
+    int distance, myMax, targetMax;
     AngleVectors( self->client->ps.viewangles, forward, right, up);
     
     CalcMuzzlePoint( self, forward, right, up , muzzle);
+    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], NULL, myMaxs, NULL, NULL, NULL);
+    
+    if(targetIsEntity(target) && target.ent->client)
+        BG_FindBBoxForClass(target.ent->client->ps.stats[STAT_PCLASS], NULL,targetMaxs, NULL, NULL, NULL);
+    else if(targetIsEntity(target) && getTargetType(target) == ET_BUILDABLE)
+        BG_FindBBoxForBuildable(target.ent->s.modelindex, NULL, targetMaxs);
+    else 
+        VectorSet(targetMaxs, 0, 0, 0);
+    targetMax = VectorLengthSquared(targetMaxs);
+    myMax = VectorLengthSquared(myMaxs);
+    
     switch(self->s.weapon) {
         case WP_ABUILD:
             range = 0; //poor granger :(
@@ -836,8 +849,10 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     }
     getTargetPos(target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
-    if((DistanceSquared(self->s.pos.trBase,targetPos) <= Square(range) 
-    || (DistanceSquared(self->s.pos.trBase, targetPos) <= Square(secondaryRange)))
+    distance = DistanceSquared(self->s.pos.trBase, targetPos);
+    distance = (int) distance - myMax/2 - targetMax/2;
+    
+    if((distance <= Square(range) || distance <= Square(secondaryRange))
     &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid)
         return qtrue;
     else
