@@ -66,7 +66,7 @@ int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );
 void setNewRoute(gentity_t *self);
 
-qboolean botTargetInRange( gentity_t *self, botTarget_t target );
+qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask );
 qboolean G_BotCheckForSpawningPlayers( gentity_t *self );
 qboolean botWeaponHasLowAmmo(gentity_t *self);
 void setSkill(gentity_t *self, int skill);

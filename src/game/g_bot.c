@@ -350,8 +350,11 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         //our route has ended or we have been told to quit following it 
         //can we see the goal? Then go directly to it. Else find a new route and folow it
-    } else {
+    } else if(botTargetInRange(self, self->botMind->goal, MASK_DEADSOLID)){
         G_BotGoto(self,self->botMind->goal,botCmdBuffer);
+    } else {
+        findRouteToTarget(self, self->botMind->goal);
+        setNewRoute(self);
     }
     
 }
@@ -556,7 +559,7 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         botFireWeapon(self, botCmdBuffer);
         self->botMind->enemyLastSeen = level.time;
-    } else if(botTargetInRange(self, self->botMind->goal)) {
+    } else if(botTargetInRange(self, self->botMind->goal, MASK_SHOT)) {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
         G_BotReactToEnemy(self, botCmdBuffer);
         self->botMind->enemyLastSeen = level.time;
@@ -1295,7 +1298,7 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
         if( newDistance < minDistance && target->health > 0) {
             
             //if we can see the entity OR we are on aliens (who dont care about LOS because they have radar)
-            if( (self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) || botTargetInRange(self, botTarget) ){
+            if( (self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS ) || botTargetInRange(self, botTarget, MASK_SHOT) ){
                 
                 //if the entity is a building and we can attack structures and we are not a dretch
                 if(target->s.eType == ET_BUILDABLE && g_bot_attackStruct.integer && self->client->ps.stats[STAT_PCLASS] != PCL_ALIEN_LEVEL0) {
@@ -1324,7 +1327,7 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
         return closestTarget;
 }
 
-qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
+qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
     trace_t trace;
     vec3_t  muzzle, targetPos;
     vec3_t  forward, right, up;
@@ -1334,7 +1337,7 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target ) {
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     getTargetPos(target, &targetPos);
-    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, MASK_SHOT);
+    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, mask);
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
