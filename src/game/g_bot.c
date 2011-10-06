@@ -491,6 +491,8 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target)) {
         botShakeAim(self, &tmpVec);
     }
+    
+        
     botAimAtLocation(self, tmpVec, botCmdBuffer);
     
     //humans should not move if they are targetting, and can hit, a building
@@ -1624,10 +1626,10 @@ void setSkill(gentity_t *self, int skill) {
     //different aim for different teams
     if(self->botMind->botTeam == PTE_HUMANS) {
         self->botMind->botSkill.aimSlowness = (float) skill / 80;
-        self->botMind->botSkill.aimShake = (int) (10 - skill);
+        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
     } else {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
-        self->botMind->botSkill.aimShake = (int) (10 - skill);
+        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
     }
 }
     
