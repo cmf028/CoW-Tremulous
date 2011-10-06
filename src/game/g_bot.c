@@ -262,6 +262,7 @@ void G_BotThink( gentity_t *self) {
 void G_BotModusManager( gentity_t *self ) {
     
     int enemyIndex = ENTITYNUM_NONE;
+    
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);

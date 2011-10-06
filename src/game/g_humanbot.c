@@ -167,7 +167,6 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
     // Array which contains the located entities
     int entityList[ MAX_GENTITIES ];
     int min_distance = Square(MGTURRET_RANGE * 5);
-    int nearest_dmged_building = ENTITYNUM_NONE;
     // Temporary entitiy
     gentity_t *target;
     // Temporary buildable
@@ -189,14 +188,10 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
            target->biteam == self->client->ps.stats[ STAT_PTEAM ] &&
            target->health <  BG_FindHealthForBuildable( inspectedBuilding ) &&
            target->health > 0 && target->spawned) {
-            new_distance = DistanceSquared(self->s.pos.trBase, target->s.pos.trBase );
-            if( new_distance < min_distance ) {
-                min_distance = new_distance;
-                nearest_dmged_building = entityList[ i ];
-            }
+            return entityList[i];
         }
     }
-    return nearest_dmged_building;
+    return ENTITYNUM_NONE;
 }
 qboolean botStructureIsDamaged(int team)
 {
