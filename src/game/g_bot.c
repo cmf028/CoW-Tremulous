@@ -1116,6 +1116,8 @@ void G_BotSpectatorThink( gentity_t *self ) {
     self->botMind->followingRoute = qfalse;
     setTargetEntity(&self->botMind->goal, NULL);
     self->botMind->state = FINDNEWNODE;
+    self->botMind->targetNodeID = -1;
+    self->botMind->lastNodeID = -1;
     
     if( self->client->sess.sessionTeam == TEAM_SPECTATOR ) {
         int teamnum = self->client->pers.teamSelection;
