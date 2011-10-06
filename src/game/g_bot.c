@@ -163,33 +163,33 @@ qboolean botShouldJump(gentity_t *self) {
         return qfalse;
 
 }
-int getStrafeDirection(gentity_t *self) {
+int getStrafeDirection(gentity_t *self, botTarget_t target) {
     
     trace_t traceRight,traceLeft;
-    
+    vec3_t traceHeight;
     vec3_t startRight,startLeft;
-    vec3_t maxs;
-    vec3_t forward, right, up;
+    vec3_t mins,maxs;
+    vec3_t right;
     vec3_t end;
     
     int strafe;
+    getTargetPos(target, &end);
+    BG_FindBBoxForClass( self->client->ps.stats[STAT_PCLASS], mins, maxs, NULL, NULL, NULL);
+    AngleVectors( self->client->ps.viewangles,NULL , right, NULL);
     
-    BG_FindBBoxForClass( self->client->ps.stats[STAT_PCLASS], NULL, maxs, NULL, NULL, NULL);
-    AngleVectors( self->client->ps.viewangles, forward, right, up);
-    
-    //CalcMuzzlePoint( self, forward, right, up , muzzle);
-    VectorMA(self->s.origin, 10, forward, end);
     
     VectorScale(right, maxs[1], right);
     
     VectorAdd( self->s.origin, right, startRight );
     VectorSubtract( self->s.origin, right, startLeft );
     
-    startRight[2] += self->client->ps.viewheight;
-    startLeft[2] += self->client->ps.viewheight;
+    startRight[2] += mins[2];
+    startLeft[2] += mins[2];
     
-    trap_Trace( &traceRight, startRight, NULL, NULL, end, self->s.number, MASK_SHOT );
-    trap_Trace( &traceLeft, startLeft, NULL, NULL, end, self->s.number, MASK_SHOT );
+    VectorSet(traceHeight, 0.0f, 1.0f, (maxs[2] - mins[2]));
+    
+    trap_Trace( &traceRight, startRight, NULL, traceHeight, end, self->s.number, MASK_DEADSOLID);
+    trap_Trace( &traceLeft, startLeft, NULL, traceHeight, end, self->s.number, MASK_DEADSOLID );
     
     if( traceRight.fraction == 1.0f && traceLeft.fraction != 1.0f ) {
         strafe = 127;
@@ -202,8 +202,6 @@ int getStrafeDirection(gentity_t *self) {
             strafe = 127;
         else
             strafe = -127;
-        
-        //we are not blocked, so we dont need to strafe
     }
         
     
@@ -513,7 +511,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     
     //we have stopped moving forward, try to get around whatever is blocking us
     if( self->client->ps.velocity[1] == 0.0f ) {
-        botCmdBuffer->rightmove = getStrafeDirection(self);
+        botCmdBuffer->rightmove = getStrafeDirection(self, target);
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
     }
