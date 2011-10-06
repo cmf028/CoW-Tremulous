@@ -1538,7 +1538,6 @@ void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
 }
 void setNewRoute(gentity_t *self) { 
     self->botMind->timeFoundNode = level.time;
-    self->botMind->lastNodeID = self->botMind->targetNodeID;
     self->botMind->targetNodeID = self->botMind->startNodeID;
     self->botMind->followingRoute = qtrue;
 }
