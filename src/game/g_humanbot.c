@@ -162,11 +162,9 @@ int botFindDamagedFriendlyStructure( gentity_t *self )
     int i;
     // Entities located in scanning field
     int total_entities;
-    
-    int new_distance;
+
     // Array which contains the located entities
     int entityList[ MAX_GENTITIES ];
-    int min_distance = Square(MGTURRET_RANGE * 5);
     // Temporary entitiy
     gentity_t *target;
     // Temporary buildable
