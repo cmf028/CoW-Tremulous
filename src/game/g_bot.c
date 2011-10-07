@@ -65,11 +65,9 @@ void G_BotAdd( char *name, int team, int skill ) {
     //default bot data
     bot->botMind = &g_botMind[clientNum];
     bot->botMind->enemyLastSeen = 0;
-    bot->botMind->command = BOT_AUTO;
     bot->botMind->botTeam = team;
+    bot->botMind->command = BOT_AUTO;
     bot->botMind->spawnItem = WP_HBUILD;
-    bot->botMind->state = FINDNEWNODE;
-    bot->botMind->timeFoundEnemy = 0;
     bot->botMind->followingRoute = qfalse;
     bot->botMind->needsNewGoal = qtrue;
     setSkill(bot, skill);
@@ -235,7 +233,6 @@ qboolean botPathIsBlocked(gentity_t *self) {
     trace_t trace;
     gentity_t *traceEnt;
     int blockerTeam;
-    int stepHeight = 18;
     
     if( !self->client )
         return qfalse;
@@ -385,28 +382,24 @@ void G_BotModusManager( gentity_t *self ) {
                     self->botMind->enemyLastSeen = level.time;
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if((damagedBuildingIndex != ENTITYNUM_NONE || goalIsDamagedBuildingOnTeam(self)) && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
                 self->botMind->currentModus = REPAIR;
                 if(!goalIsDamagedBuildingOnTeam(self)) {
                     setGoalEntity(self, &g_entities[damagedBuildingIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = HEAL;
                 if(!goalIsMedistat(self)) {
                     setGoalEntity(self, &g_entities[medistatIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = BUY;
                 if(!goalIsArmoury(self)) {
                     setGoalEntity(self, &g_entities[armouryIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if(g_bot_roam.integer > 0){
                 if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
                     setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
@@ -425,7 +418,6 @@ void G_BotModusManager( gentity_t *self ) {
                     self->botMind->enemyLastSeen = level.time;
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) 
                 && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = HEAL;
@@ -433,14 +425,12 @@ void G_BotModusManager( gentity_t *self ) {
                     setGoalEntity(self, &g_entities[medistatIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = BUY;
                 if(!goalIsArmoury(self)) {
                     setGoalEntity(self, &g_entities[armouryIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else if(g_bot_roam.integer > 0){
                 if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
                     setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
@@ -458,7 +448,6 @@ void G_BotModusManager( gentity_t *self ) {
                     setGoalEntity(self, &g_entities[damagedBuildingIndex]);
                     self->botMind->needsNewGoal = qfalse;
                 }
-                self->botMind->state = FINDNEWNODE;
             } else {
                 self->botMind->currentModus = IDLE;
             }
@@ -507,7 +496,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         doLastNodeAction(self, botCmdBuffer);
         
         //apparently, we are stuck, so find a new route to the goal and use that
-        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->visited[4]].timeout)
+        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout)
         {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
@@ -520,7 +509,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         if(distanceToTargetNode(self) < 70)
         {
-            addVisited(self, self->botMind->targetNodeID);
+            self->botMind->lastNodeID = self->botMind->targetNodeID;
             self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNodeID];
             self->botMind->timeFoundNode = level.time;
             
@@ -1128,7 +1117,6 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             
             if( self->client->time10000 % 2000 ) {
                 botCmdBuffer->buttons |= BUTTON_ATTACK;
-                self->botMind->isFireing = qtrue;
             }
         } else if(self->client->ps.weapon == WP_HBUILD || self->client->ps.weapon == WP_HBUILD2) {
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
@@ -1271,7 +1259,6 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
     
     
 void G_BotSpectatorThink( gentity_t *self ) {
-    int i;
     //hacky ping fix
     self->client->ps.ping = rand() % 50 + 50;
     if( self->client->ps.pm_flags & PMF_QUEUED) {
@@ -1296,12 +1283,11 @@ void G_BotSpectatorThink( gentity_t *self ) {
     
     //reset stuff
     self->botMind->followingRoute = qfalse;
-    self->botMind->state = FINDNEWNODE;
     self->botMind->currentModus = IDLE;
     self->botMind->targetNodeID = -1;
     self->botMind->needsNewGoal = qtrue;
-    for(i=0;i<5;i++)
-        self->botMind->visited[i] = -1;
+    self->botMind->targetNodeID = -1;
+    self->botMind->lastNodeID = -1;
     
     if( self->client->sess.sessionTeam == TEAM_SPECTATOR ) {
         int teamnum = self->client->pers.teamSelection;
@@ -1631,7 +1617,7 @@ int findClosestNode( botTarget_t startTarget) {
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t targetPos;
     getTargetPos(self->botMind->targetNode,&targetPos);
-    switch(level.nodes[self->botMind->visited[4]].action)
+    switch(level.nodes[self->botMind->lastNodeID].action)
     {
         case BOT_JUMP:  
             
@@ -1737,90 +1723,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
             self->botMind->startNodeID = startNum;
         self->botMind->endNodeID = endNum;
 }
-void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
-    botTarget_t target;
-    int i;
-    int closestNode;
-    setTargetEntity(&target, self);
-    closestNode = findClosestNode(target);
-    for(i=0;i<5;i++) {
-        self->botMind->visited[i] = -1;
-    }
-    if(closestNode != -1) {
-        self->botMind->targetNodeID = closestNode;
-        self->botMind->timeFoundNode = level.time;
-        self->botMind->state = TARGETNODE;
-    } else {
-        self->botMind->state = LOST;
-        botCmdBuffer->forwardmove = 0;
-        botCmdBuffer->upmove = -1;
-        botCmdBuffer->rightmove = 0;
-        botCmdBuffer->buttons = 0;
-        botCmdBuffer->buttons |= BUTTON_GESTURE;
-    }
-}
 
-void findNextNode( gentity_t *self )
-{
-    int randnum = 0;
-    int i,nextNode = 0;
-    int possibleNextNode = 0;
-    int possibleNodes[5];
-    int lasttarget = self->botMind->targetNodeID;
-    possibleNodes[0] = possibleNodes[1] = possibleNodes[2] = possibleNodes[3] = possibleNodes[4] = 0;
-    for(i = 0; i < 5; i++) {
-        if(level.nodes[self->botMind->targetNodeID].nextid[i] < level.numNodes &&
-            level.nodes[self->botMind->targetNodeID].nextid[i] >= 0) {
-                if(haveVisited(self,level.nodes[self->botMind->targetNodeID].nextid[i])) {
-                    continue;
-                }
-                possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNodeID].nextid[i];
-                possibleNextNode++;
-        }
-    }
-    if(possibleNextNode == 0) {
-        self->botMind->state = FINDNEWNODE;
-        return;
-    }
-    else {
-        self->botMind->state = TARGETNODE;
-        if(level.nodes[self->botMind->targetNodeID].random < 0) {
-            nextNode = 0;
-        }
-        else {
-            srand( trap_Milliseconds( ) );
-            randnum = rand() % possibleNextNode;
-            nextNode = randnum;
-            }
-            addVisited(self, self->botMind->targetNodeID);
-            self->botMind->targetNodeID = possibleNodes[nextNode];
-            for(i = 0;i < 5;i++) {
-                if(level.nodes[self->botMind->targetNodeID].nextid[i] == lasttarget) {
-                    i = 5;
-                }
-            }
-            
-            self->botMind->timeFoundNode = level.time;
-            return;
-        }
-        
-        return;
-    }
-void addVisited(gentity_t *self,int id) {
-    int i;
-    for(i = 0; i < 4; i++) {
-        self->botMind->visited[i] = self->botMind->visited[i+1];
-    }
-    self->botMind->visited[4] = id;
-}
-qboolean haveVisited( gentity_t *self, int id) {
-    int i;
-    for(i=0; i < 5; i++) {
-        if(self->botMind->visited[i] == id)
-            return qtrue;
-    }
-    return qfalse;
-}
 void setSkill(gentity_t *self, int skill) {
     self->botMind->botSkill.level = skill;
     //different aim for different teams

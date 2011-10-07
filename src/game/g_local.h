@@ -108,21 +108,6 @@ typedef struct
         int     timeout;
         int     action;
 } node;
-
-typedef enum
-{
-        
-        //path states
-        FINDNEWNODE,
-        FINDNEXTNODE,
-        TARGETNODE,
-        TARGETOBJECTIVE,
-        LOST,
-        
-        //none
-        NONE
-        
-} botstate;
 typedef struct
 {
     gentity_t *ent;
@@ -140,13 +125,10 @@ typedef struct
     botCommand_t          command;
     int                           enemyLastSeen;
     int                           botTeam;
-    int timeFoundEnemy;
     int spawnItem;
-    qboolean  isFireing;
-    vec_t *defensePoint;
+    int                 lastNodeID;
     int                   targetNodeID;
     int                   timeFoundNode;
-    botstate              state;
     qboolean              followingRoute;
     botTarget_t           targetNode;
     botTarget_t           goal;
@@ -156,7 +138,6 @@ typedef struct
     int lastRouteSearch;
     botSkill_t botSkill;
     botModus_t currentModus;
-    int visited[5]; //used for random roaming
     qboolean needsNewGoal;
 } botMemory_t;
 //============================================================================
