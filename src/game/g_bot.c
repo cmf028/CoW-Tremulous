@@ -309,6 +309,8 @@ void G_BotModusManager( gentity_t *self ) {
         self->botMind->state = FINDNEWNODE;
     } else if(g_bot_roam.integer > 0 && self->botMind->command != BOT_REPAIR){
         self->botMind->currentModus = ROAM;
+    } else {
+        self->botMind->currentModus = IDLE;
     }
     
 }
@@ -439,36 +441,12 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 }*/
 //using PBot Code for now..
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
-    switch(self->botMind->state) {
-        case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
-        case FINDNEXTNODE: findNextNode(self); break;
-        case TARGETNODE:break; //basically used as a flag that is checked elsewhere
-        case LOST: findNewNode(self, botCmdBuffer);break; //This should never happen unless there are 0 waypoints on the map
-        case TARGETOBJECTIVE: break;
-        default: break;
-    }
-    if(self->botMind->state == TARGETNODE) {
-        #ifdef BOT_DEBUG
-        trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
-        #endif
-        setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
-        G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
-        
-        if(self->botMind->lastNodeID >= 0 ) {
-            doLastNodeAction(self, botCmdBuffer);
-            if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
-                self->botMind->state = FINDNEWNODE;
-                self->botMind->timeFoundNode = level.time;
-            }
-        }
-        else if( level.time - self->botMind->timeFoundNode > 10000 ) {
-            self->botMind->state = FINDNEWNODE;
-            self->botMind->timeFoundNode = level.time;
-        }
-        if(distanceToTargetNode(self) < 70) {
-            self->botMind->state = FINDNEXTNODE;
-            self->botMind->timeFoundNode = level.time;
-        }
+    vec3_t tmpVec;
+    getTargetPos(self->botMind->goal, &tmpVec);
+    if(DistanceSquared(self->s.pos.trBase,tmpVec) < Square(70) || targetIsEntity(self->botMind->goal)) {
+        setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
+    } else {
+        G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     }
 }
 
@@ -660,7 +638,29 @@ void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
         }
 }
 void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
-    G_BotSearchForGoal(self, botCmdBuffer);
+    int buildingIndex;
+    qboolean teamRush;
+    if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
+        buildingIndex = botFindBuilding(self, BA_A_OVERMIND, -1);
+        if(buildingIndex == ENTITYNUM_NONE) {
+            buildingIndex = botFindBuilding(self, BA_A_SPAWN, -1);
+        }
+        teamRush = level.time % 36000 < 18000;
+    } else {
+        buildingIndex = botFindBuilding(self, BA_H_REACTOR, -1);
+        if(buildingIndex == ENTITYNUM_NONE) {
+            buildingIndex = botFindBuilding(self, BA_H_SPAWN, -1);
+        }
+        teamRush = level.time % 36000 > 18000;
+    }
+    if(buildingIndex != ENTITYNUM_NONE && teamRush ) {
+        if(buildingIndex != getTargetEntityNumber(self->botMind->goal))
+            setGoalEntity(self,&g_entities[buildingIndex]);
+        else
+            G_BotMoveDirectlyToGoal(self, botCmdBuffer);
+    }else {
+        G_BotSearchForGoal(self, botCmdBuffer); 
+    }
 }
 /**
  * G_BotReactToEnemy
