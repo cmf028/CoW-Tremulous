@@ -883,7 +883,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     distance = (int) distance - myMax/2 - targetMax/2;
     
     if((distance <= Square(range) || distance <= Square(secondaryRange))
-    &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid)
+    &&(trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f))
         return qtrue;
     else
         return qfalse;
@@ -1229,9 +1229,9 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
     getTargetPos(target, aimLocation);
     //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
-    if(getTargetType(target) != ET_BUILDABLE && getTargetTeam(target) == PTE_HUMANS && getTargetEntityNumber(target) != ENTITYNUM_NONE)
-        (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].r.maxs[2] * 0.85;
-    else if(getTargetType(target) == ET_BUILDABLE || getTargetTeam(target) == PTE_ALIENS) {
+    if(getTargetType(target) != ET_BUILDABLE && getTargetEntityNumber(target) != ENTITYNUM_NONE)
+        (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].client->ps.viewheight;
+    else if(getTargetType(target) == ET_BUILDABLE) {
         VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
     } else { 
         //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
