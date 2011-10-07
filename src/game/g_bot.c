@@ -725,7 +725,7 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
             break;
         case PCL_ALIEN_LEVEL3:
         case PCL_ALIEN_LEVEL3_UPG:
-            self->botMind->followingRoute = qfalse;
+            //self->botMind->followingRoute = qfalse;
             /*
             getTargetPos(self->botMind->goal,&targetPos);
             //pounce to the target
@@ -771,6 +771,7 @@ void G_BotDodge(gentity_t *self, usercmd_t *botCmdBuffer) {
  * botGetAimEntityNumber
  * Returns the entity number of the entity that the bot is currently aiming at
  */
+//NOTE: This is just used for telling bot repairers if they will repair the buildable when they fire. Thus, this may need updating if the code for ckit repair changes in g_weapon.c
 int botGetAimEntityNumber(gentity_t *self) {
     vec3_t forward;
     vec3_t end;
@@ -1229,9 +1230,15 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
     getTargetPos(target, aimLocation);
     //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
-    if(getTargetType(target) != ET_BUILDABLE && getTargetEntityNumber(target) != ENTITYNUM_NONE)
+    
+    if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target)) {
+        //make lucifer cannons aim ahead based on the target's velocity
+        if(self->s.weapon == WP_LUCIFER_CANNON) {
+            VectorMA(*aimLocation, Distance(self->s.pos.trBase, *aimLocation) / LCANNON_SPEED, target.ent->s.pos.trDelta, *aimLocation);
+        }
         (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].client->ps.viewheight;
-    else if(getTargetType(target) == ET_BUILDABLE) {
+        
+    } else if(getTargetType(target) == ET_BUILDABLE) {
         VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
     } else { 
         //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
