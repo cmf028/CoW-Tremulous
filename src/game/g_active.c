@@ -577,7 +577,7 @@ void ClientTimerActions( gentity_t *ent, int msec )
   while ( client->time100 >= 100 )
   {
     if( ent->r.svFlags & SVF_BOT )
-     G_BotThink( ent );
+      G_BotThink( ent );
 
     client->time100 -= 100;
 
@@ -1459,10 +1459,7 @@ void ClientThink_real( gentity_t *ent )
   }
 
   G_UpdatePTRConnection( client );
-  if( ent->r.svFlags & SVF_BOT )
-  {
-        G_FrameAim( ent );
-  }
+
   // check for inactivity timer, but never drop the local client of a non-dedicated server
   if( !ClientInactivityTimer( client ) )
     return;
