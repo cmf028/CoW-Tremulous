@@ -1399,50 +1399,41 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
 
 int findClosestNode( vec3_t start ) {
         trace_t trace;
-        int i = 0;
+        int i,k,n = 0;
         float distance = 0;
-        int closestNode = 0;
-        float closestNodeDistance = Square(2000);
-        qboolean nodeFound = qfalse;
-        for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
-        {
-                trap_Trace( &trace, start, NULL, NULL, level.nodes[i].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
-                if( trace.fraction < 1.0 )
-                {continue;}
-                //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here)
-                distance = (float) DistanceSquared(level.nodes[i].coord,start);
-                if(distance < Square(5000)) {
-                        if(closestNodeDistance > distance) {
-                                closestNode = i;
-                                closestNodeDistance = distance;
-                                nodeFound = qtrue;
-                        }
-                }
-        }
-        if(nodeFound == qtrue) {
-                return closestNode;
-        }
-        else {
-            //try to find closest node without checking for LOS from start point
-            //last ditch attempt to compensate for weird (glitch) building positons and bad node layouts
-            for(i = 0; i < level.numNodes; i++) //find a nearby path that wasn't used before
-            {
-                //using distanceSquared for performance reasons (sqrt is expensive and this gives same result here
-                //adding the height difference to the distance to get a more reliable path (more likely that wanted node is on same level as start)
-                distance = (float) DistanceSquared(level.nodes[i].coord,start) + (Square(start[2]) - Square(level.nodes[i].coord[2]));
-                if(distance < Square(5000)) {
-                    if(closestNodeDistance > distance) {
-                        closestNode = i;
-                        closestNodeDistance = distance;
-                        nodeFound = qtrue;
+        float closestNodeDistances[4] = {-1,-1,-1,-1};
+        int closestNodes[4];
+        for(i = 0; i < MAX_NODES; i++) {
+            distance = DistanceSquared(start,level.nodes[i].coord);
+            //check if new distance is shorter than one of the 4 we have
+            for(k=0;k<4;k++) {
+                if(distance < closestNodeDistances[k] || closestNodeDistances[k] == -1) {
+                    //need to move the other elements up 1 index
+                    for(n=k;n<3;n++) {
+                        closestNodeDistances[n+1] = closestNodeDistances[n];
+                        closestNodes[n+1] = closestNodes[n];
                     }
+                    closestNodeDistances[k] = distance;
+                    closestNodes[k] = i;
+                    //get out of inner loop
+                    break;
+                } else {
+                    continue;
                 }
             }
-            if(nodeFound == qtrue)
-                return closestNode;
-            else //there are no nodes on the map
-                return -1;
         }
+        //now loop through the closestnodes and find the closest node that is in LOS
+        //note that they are sorted by distance in the array
+        for(i = 0; i < 4; i++) {
+            trap_Trace( &trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
+            if( trace.fraction < 1.0 ) {
+                continue;
+            } else {
+                return closestNodes[i];
+            }
+        }
+        //no closest nodes are in LOS, pick the closest node regardless of LOS
+        return closestNodes[0];
 }
 void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     
@@ -1558,12 +1549,12 @@ void setNewRoute(gentity_t *self) {
 }
 
 void findRouteToTarget( gentity_t *self, botTarget_t target ) {
-    long shortdist[MAX_NODES];
+    long shortDist[MAX_NODES];
     short i;
     short k;
-    int mini;
+    int bestNode;
+    int childNode;
     short visited[MAX_NODES];
-    
     //make startNum -1 so if there is no node close to us, we will not use the path
     short startNum = -1;
     short endNum = -1;
@@ -1578,7 +1569,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     
     //set initial variable values
     for( i=0;i<MAX_NODES;i++) {
-        shortdist[i] = 99999999;
+        shortDist[i] = 99999999;
         self->botMind->routeToTarget[i] = -1;
         visited[i] = 0;
     }
@@ -1586,21 +1577,23 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     endNum = findClosestNode(end);
     
     
-    shortdist[endNum] = 0;
+    shortDist[endNum] = 0;
+    //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
     for (k = 0; k <= MAX_NODES; ++k) {
-        mini = -1;
+        bestNode = -1;
         for (i = 0; i <= MAX_NODES; ++i) {
-            if (!visited[i] && ((mini == -1) || (shortdist[i] < shortdist[mini])))
-                mini = i;
+            if (!visited[i] && ((bestNode == -1) || (shortDist[i] < shortDist[bestNode])))
+                bestNode = i;
         }
 
-        visited[mini] = 1;
+        visited[bestNode] = 1;
 
-        for (i = 0; i <= MAX_NODES; ++i) {
-            if (level.distNode[mini][i]) {
-                if (shortdist[mini] + level.distNode[mini][i] < shortdist[i]) {
-                    shortdist[i] = shortdist[mini] + level.distNode[mini][i];
-                    self->botMind->routeToTarget[i] = mini;
+        for (i = 0; i < MAX_PATH_NODES; ++i) {
+            if (level.distNode[bestNode][level.nodes[bestNode].nextid[i]]) {
+                childNode = level.nodes[bestNode].nextid[i];
+                if (shortDist[bestNode] + level.distNode[bestNode][childNode] < shortDist[childNode]) {
+                    shortDist[childNode] = shortDist[bestNode] + level.distNode[bestNode][childNode];
+                    self->botMind->routeToTarget[childNode] = bestNode;
                 }
             }
         }
