@@ -574,11 +574,10 @@ void ClientTimerActions( gentity_t *ent, int msec )
   client->time1000 += msec;
   client->time10000 += msec;
 
+  if( ent->r.svFlags & SVF_BOT )
+      G_BotThink( ent );
   while ( client->time100 >= 100 )
   {
-    if( ent->r.svFlags & SVF_BOT )
-      G_BotThink( ent );
-
     client->time100 -= 100;
 
     //if not trying to run then not trying to sprint
