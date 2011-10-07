@@ -1579,9 +1579,9 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     
     shortDist[endNum] = 0;
     //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
-    for (k = 0; k <= MAX_NODES; ++k) {
+    for (k = 0; k < MAX_NODES; ++k) {
         bestNode = -1;
-        for (i = 0; i <= MAX_NODES; ++i) {
+        for (i = 0; i < MAX_NODES; ++i) {
             if (!visited[i] && ((bestNode == -1) || (shortDist[i] < shortDist[bestNode])))
                 bestNode = i;
         }
@@ -1589,8 +1589,8 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         visited[bestNode] = 1;
 
         for (i = 0; i < MAX_PATH_NODES; ++i) {
-            if (level.distNode[bestNode][level.nodes[bestNode].nextid[i]]) {
-                childNode = level.nodes[bestNode].nextid[i];
+            childNode = level.nodes[bestNode].nextid[i];
+            if (childNode != -1 && childNode < 1000 ) {
                 if (shortDist[bestNode] + level.distNode[bestNode][childNode] < shortDist[childNode]) {
                     shortDist[childNode] = shortDist[bestNode] + level.distNode[bestNode][childNode];
                     self->botMind->routeToTarget[childNode] = bestNode;
