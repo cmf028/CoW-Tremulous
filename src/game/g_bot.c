@@ -370,7 +370,12 @@ void G_BotModusManager( gentity_t *self ) {
     //search for a new enemy every so often
    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0)
         enemyIndex = botFindClosestEnemy(self, qfalse);
-    
+   
+   //we dont want bots to go out of these modus when an enemy appears unless said enemy is closer than goal position (+300)
+    if(self->botMind->currentModus == BUY || self->botMind->currentModus == REPAIR || self->botMind->currentModus == HEAL) {
+        if(!self->botMind->needsNewGoal && DistanceSquared(self->s.origin, g_entities[enemyIndex].s.origin) > DistanceSquared(self->s.origin, self->botMind->goal.ent->s.origin) + Square(300) && enemyIndex != ENTITYNUM_NONE)
+            return;
+    }
     switch(self->botMind->command) {
         case BOT_AUTO:
             if(enemyIndex != ENTITYNUM_NONE || goalIsEnemy(self)) {
