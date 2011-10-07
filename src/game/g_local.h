@@ -88,7 +88,12 @@ typedef enum
   BOT_REPAIR,
   BOT_AUTO
 } botCommand_t;
-
+typedef struct 
+{
+    vec3_t vertices[4];
+    vec3_t normal;
+    int height;
+} botPoly_t;
 typedef enum
 {
     ATTACK,
@@ -156,6 +161,7 @@ typedef struct
     int lastRouteSearch;
     botSkill_t botSkill;
     botModus_t currentModus;
+    botTarget_t currentTarget;
 } botMemory_t;
 //============================================================================
 
@@ -920,6 +926,7 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command);
 void G_BotThink(gentity_t *self);
 void G_BotSpectatorThink( gentity_t *self );
 void G_BotIntermissionThink( gclient_t *client );
+void G_FrameAim(gentity_t *self);
 
 
 #define AS_OVER_RT3         ((ALIENSENSE_RANGE*0.5f)/M_ROOT3)

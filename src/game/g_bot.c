@@ -262,7 +262,6 @@ void G_BotThink( gentity_t *self) {
 void G_BotModusManager( gentity_t *self ) {
     
     int enemyIndex = ENTITYNUM_NONE;
-    
     int damagedBuildingIndex = botFindDamagedFriendlyStructure(self);
     int medistatIndex = botFindBuilding(self, BA_H_MEDISTAT, BOT_MEDI_RANGE);
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
@@ -478,23 +477,8 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Also can be used to make the bot travel other short distances
 */
 void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
-    
     vec3_t tmpVec;
-    
-    //aim at the destination
-    botGetAimLocation(target, &tmpVec);
-    
-    if(!targetIsEntity(target))
-        botSlowAim(self, tmpVec, 0.5f, &tmpVec);
-    else
-        botSlowAim(self, tmpVec, self->botMind->botSkill.aimSlowness, &tmpVec);
-    
-    if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target)) {
-        botShakeAim(self, &tmpVec);
-    }
-    
-        
-    botAimAtLocation(self, tmpVec, botCmdBuffer);
+    self->botMind->currentTarget = target;
     
     //humans should not move if they are targetting, and can hit, a building
     if(botTargetInAttackRange(self, target) && getTargetType(target) == ET_BUILDABLE && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS && getTargetTeam(target) == PTE_ALIENS)
@@ -1261,6 +1245,23 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
         rAngles->angles[1] = aimAngles[1];
         rAngles->angles[2] = aimAngles[2];
 }
+void G_FrameAim(gentity_t *self) {
+    vec3_t tmpVec;
+    //aim at the destination
+    botGetAimLocation(self->botMind->currentTarget, &tmpVec);
+    
+    if(!targetIsEntity(self->botMind->currentTarget))
+        botSlowAim(self, tmpVec, 0.5f, &tmpVec);
+    else
+        botSlowAim(self, tmpVec, self->botMind->botSkill.aimSlowness, &tmpVec);
+    
+    if(getTargetType(self->botMind->currentTarget) != ET_BUILDABLE && targetIsEntity(self->botMind->currentTarget)) {
+        botShakeAim(self, &tmpVec);
+    }
+    
+    
+    botAimAtLocation(self, tmpVec, &self->client->pers.cmd);
+}
 //blatently ripped from ShotgunPattern() in g_weapon.c :)
 void botShakeAim( gentity_t *self, vec3_t *rVec ){
     vec3_t forward, right, up, diffVec;
@@ -1388,7 +1389,7 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         
         //make the aim slow by not going the full difference
         //between the current aim Vector and the new one
-        slowness = slow*(FRAMETIME/1000.0);
+        slowness = slow*(25/1000.0);
         if(slowness > 1.0) slowness = 1.0;
         
         VectorLerp( slowness, forward, aimVec, skilledVec);
@@ -1636,10 +1637,10 @@ void setSkill(gentity_t *self, int skill) {
     //different aim for different teams
     if(self->botMind->botTeam == PTE_HUMANS) {
         self->botMind->botSkill.aimSlowness = (float) skill / 80;
-        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     } else {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
-        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
 }
     
