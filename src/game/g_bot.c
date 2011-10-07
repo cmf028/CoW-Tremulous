@@ -1585,15 +1585,6 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     startNum = findClosestNode(start);
     endNum = findClosestNode(end);
     
-    //the start and end nodes are the same
-    //given a waypoint grid that is made correctly, (a grid that is not made correctly would have other problems)
-    //we can skip routefinding and just head straight to the target
-    //this is accomplished by setting the startNodeID to -1 and returning
-    if(startNum == endNum || endNum == -1) {
-        self->botMind->targetNodeID = -1;
-        self->botMind->followingRoute = qfalse;
-        return;
-    }
     
     shortdist[endNum] = 0;
     for (k = 0; k <= MAX_NODES; ++k) {
