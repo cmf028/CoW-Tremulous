@@ -274,7 +274,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
     } else {
         blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || (blockerTeam != PTE_ALIENS && getEntityTeam(self) == PTE_ALIENS))//hitting nothing?
+    if( trace.fraction == 1.0f || (blockerTeam != PTE_ALIENS && self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS))
             return qfalse;
     else
         return qtrue;
@@ -574,6 +574,9 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     //move forward
     botCmdBuffer->forwardmove = 127;
     
+    //sprint 
+    if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
+        self->client->ps.stats[STAT_STATE] |= SS_SPEEDBOOST;
     //dodge if going toward enemy
     if(self->client->ps.stats[STAT_PTEAM] != getTargetTeam(target) && getTargetTeam(target) != PTE_NONE) {
         G_BotDodge(self, botCmdBuffer);
@@ -612,6 +615,14 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     if( BG_ClassHasAbility( self->client->ps.stats[STAT_PCLASS], SCA_WALLCLIMBER ) )
         botCmdBuffer->upmove = -1;
     
+    //stay away from enemy as human
+        getTargetPos(target, &tmpVec);
+        if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
+        DistanceSquared(self->s.pos.trBase,tmpVec) < Square(300) && DistanceSquared(self->s.pos.trBase,tmpVec) > Square(100) && botTargetInAttackRange(self, target) && self->s.weapon != WP_PAIN_SAW
+        && getTargetTeam(target) == PTE_ALIENS)
+        {
+            botCmdBuffer->forwardmove = -100;
+        }
 }
 /**
  * G_BotAttack
