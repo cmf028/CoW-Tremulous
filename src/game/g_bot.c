@@ -278,7 +278,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
     } else {
         blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM])//hitting nothing?
+    if( trace.fraction == 1.0f || (blockerTeam != PTE_ALIENS && getEntityTeam(self) == PTE_ALIENS))//hitting nothing?
             return qfalse;
     else
         return qtrue;
@@ -618,15 +618,6 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     // enable wallwalk for classes that can wallwalk
     if( BG_ClassHasAbility( self->client->ps.stats[STAT_PCLASS], SCA_WALLCLIMBER ) )
         botCmdBuffer->upmove = -1;
-    
-    //stay away from enemy as human
-        getTargetPos(target, &tmpVec);
-        if(self->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS && 
-        DistanceSquared(self->s.pos.trBase,tmpVec) < Square(300) && botTargetInAttackRange(self, target) && self->s.weapon != WP_PAIN_SAW
-        && getTargetTeam(target) == PTE_ALIENS)
-        {
-            botCmdBuffer->forwardmove = -100;
-        }
     
 }
 /**
