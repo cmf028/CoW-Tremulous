@@ -263,7 +263,6 @@ qboolean botPathIsBlocked(gentity_t *self) {
             VectorCopy(forwardDerived2, forward);
     //scaling the vector
     VectorMA( self->client->ps.origin, maxs[0], forward, start );
-    start[2]+=stepHeight;
     VectorMA(start, 30, forward,end);
     
     trap_Trace( &trace, self->client->ps.origin, mins, maxs, end, self->s.number, MASK_SHOT );
