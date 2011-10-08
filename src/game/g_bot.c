@@ -1387,7 +1387,7 @@ int findClosestNode( botTarget_t target ) {
         int closestNodes[10];
         vec3_t start;
         getTargetPos(target, &start);
-        for(i = 0; i < MAX_NODES; i++) {
+        for(i = 0; i < level.numNodes; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have
             for(k=0;k<10;k++) {
@@ -1516,10 +1516,10 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
         
         //can we see the second node?
-        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_PLAYERSOLID);
+        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
         
         //check if we are blocked from getting there
-        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_PLAYERSOLID);
+        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
         if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
