@@ -379,9 +379,6 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
-        } else if(!botTargetInRange(self, self->botMind->targetNode, MASK_DEADSOLID) && level.time % 1000 == 0) {
-            findRouteToTarget(self, self->botMind->goal);
-            setNewRoute(self);
         }
         if(distanceToTargetNode(self) < 70)
         {
