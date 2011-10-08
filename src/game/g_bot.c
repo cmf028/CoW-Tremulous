@@ -163,19 +163,18 @@ qboolean botShouldJump(gentity_t *self) {
         return qfalse;
 
 }
-int getStrafeDirection(gentity_t *self, botTarget_t target) {
+int getStrafeDirection(gentity_t *self) {
     
     trace_t traceRight,traceLeft;
     vec3_t traceHeight;
     vec3_t startRight,startLeft;
     vec3_t mins,maxs;
-    vec3_t right;
-    vec3_t end;
+    vec3_t forward,right;
+    vec3_t endRight,endLeft;
     
     int strafe;
-    getTargetPos(target, &end);
     BG_FindBBoxForClass( self->client->ps.stats[STAT_PCLASS], mins, maxs, NULL, NULL, NULL);
-    AngleVectors( self->client->ps.viewangles,NULL , right, NULL);
+    AngleVectors( self->client->ps.viewangles,forward , right, NULL);
     
     
     VectorScale(right, maxs[1], right);
@@ -183,13 +182,17 @@ int getStrafeDirection(gentity_t *self, botTarget_t target) {
     VectorAdd( self->s.origin, right, startRight );
     VectorSubtract( self->s.origin, right, startLeft );
     
+    forward[2] = 0.0f;
+    VectorMA(startRight, maxs[0] + 30, forward, endRight);
+    VectorMA(startLeft, maxs[0] + 30, forward, endLeft);
+    
     startRight[2] += mins[2];
     startLeft[2] += mins[2];
     
     VectorSet(traceHeight, 0.0f, 1.0f, (maxs[2] - mins[2]));
     
-    trap_Trace( &traceRight, startRight, NULL, traceHeight, end, self->s.number, MASK_SHOT);
-    trap_Trace( &traceLeft, startLeft, NULL, traceHeight, end, self->s.number, MASK_SHOT);
+    trap_Trace( &traceRight, startRight, NULL, traceHeight, endRight, self->s.number, MASK_SHOT);
+    trap_Trace( &traceLeft, startLeft, NULL, traceHeight, endLeft, self->s.number, MASK_SHOT);
     
     if( traceRight.fraction == 1.0f && traceLeft.fraction != 1.0f ) {
         strafe = 127;
@@ -206,6 +209,30 @@ int getStrafeDirection(gentity_t *self, botTarget_t target) {
         
     
     return strafe;
+}
+qboolean botPathIsBlocked(gentity_t *self) {
+    vec3_t forward,start, end;
+    vec3_t mins, maxs;
+    trace_t trace;
+    
+    if( !self->client )
+        return qfalse;
+    
+    BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ], mins, maxs, NULL, NULL, NULL );
+    
+    AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
+    forward[ 2 ] = 0.0f; //make vector 2D by getting rid of z component
+
+    //scaling the vector
+    VectorMA( self->client->ps.origin, maxs[0], forward, start );
+    VectorMA(start, 30, forward,end);
+    
+    trap_Trace( &trace, self->client->ps.origin, mins, maxs, end, self->client->ps.clientNum, MASK_PLAYERSOLID );
+    
+    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD)//hitting nothing? (world doesnt count)
+            return qfalse;
+    else
+        return qtrue;
 }
 /**G_BotThink
  * Does Misc bot actions
@@ -491,8 +518,8 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     self->client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
     
     //we have stopped moving forward, try to get around whatever is blocking us
-    if( self->client->ps.velocity[1] == 0.0f ) {
-        botCmdBuffer->rightmove = getStrafeDirection(self, target);
+    if( botPathIsBlocked(self) ) {
+        botCmdBuffer->rightmove = getStrafeDirection(self);
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
         //dont move forward as quickly to allow use to strafe correctly
