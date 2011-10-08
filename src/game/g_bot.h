@@ -58,9 +58,7 @@ int botFindDamagedFriendlyStructure( gentity_t *self );
 int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
 int botFindBuilding(gentity_t *self, int buildingType, int range);
 
-int findClosestNode( vec3_t start );
-void findNextNode( gentity_t *self );
-void findNewNode( gentity_t *self , usercmd_t *botCmdBuffer);
+int findClosestNode( botTarget_t target );
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer);
 int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );

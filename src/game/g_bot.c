@@ -214,6 +214,8 @@ qboolean botPathIsBlocked(gentity_t *self) {
     vec3_t forward,start, end;
     vec3_t mins, maxs;
     trace_t trace;
+    gentity_t *traceEnt;
+    int blockerTeam;
     
     if( !self->client )
         return qfalse;
@@ -228,8 +230,16 @@ qboolean botPathIsBlocked(gentity_t *self) {
     VectorMA(start, 30, forward,end);
     
     trap_Trace( &trace, self->client->ps.origin, mins, maxs, end, self->client->ps.clientNum, MASK_PLAYERSOLID );
-    
-    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD)//hitting nothing? (world doesnt count)
+    traceEnt = &g_entities[trace.entityNum];
+    if(traceEnt) {
+        if(traceEnt->s.eType == ET_BUILDABLE)
+            blockerTeam = traceEnt->biteam;
+        else if(traceEnt->client)
+            blockerTeam = traceEnt->client->ps.stats[STAT_PTEAM];
+        else
+            blockerTeam = PTE_NONE;
+    }
+    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD || blockerTeam != self->client->ps.stats[STAT_PTEAM] )//hitting nothing? (world doesnt count)
             return qfalse;
     else
         return qtrue;
@@ -1425,12 +1435,14 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         VectorAdd(viewBase, skilledVec, *rVec);
 }
 
-int findClosestNode( vec3_t start ) {
+int findClosestNode( botTarget_t target ) {
         trace_t trace;
         int i,k,n = 0;
         float distance = 0;
         float closestNodeDistances[4] = {-1,-1,-1,-1};
         int closestNodes[4];
+        vec3_t start;
+        getTargetPos(target, &start);
         for(i = 0; i < MAX_NODES; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have
@@ -1453,7 +1465,7 @@ int findClosestNode( vec3_t start ) {
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
         for(i = 0; i < 4; i++) {
-            trap_Trace( &trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, ENTITYNUM_NONE, MASK_DEADSOLID );
+            trap_Trace( &trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_DEADSOLID );
             if( trace.fraction < 1.0 ) {
                 continue;
             } else {
@@ -1463,74 +1475,7 @@ int findClosestNode( vec3_t start ) {
         //no closest nodes are in LOS, pick the closest node regardless of LOS
         return closestNodes[0];
 }
-void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
-    
-    int closestNode = findClosestNode(self->s.pos.trBase);
-    self->botMind->lastNodeID = -1;
-    if(closestNode != -1) {
-    self->botMind->targetNodeID = closestNode;
-    self->botMind->timeFoundNode = level.time;
-    self->botMind->state = TARGETNODE;
-    } else {
-        self->botMind->state = LOST;
-        botCmdBuffer->forwardmove = 0;
-        botCmdBuffer->upmove = -1;
-        botCmdBuffer->rightmove = 0;
-        botCmdBuffer->buttons = 0;
-        botCmdBuffer->buttons |= BUTTON_GESTURE;
-    }
-}
-    
-void findNextNode( gentity_t *self )
-{
-        int randnum = 0;
-        int i,nextNode = 0;
-        int possibleNextNode = 0;
-        int possibleNodes[5];
-        int lasttarget = self->botMind->targetNodeID;
-        possibleNodes[0] = possibleNodes[1] = possibleNodes[2] = possibleNodes[3] = possibleNodes[4] = 0;
-            for(i = 0; i < 5; i++) {
-                    if(level.nodes[self->botMind->targetNodeID].nextid[i] < level.numNodes &&
-                    level.nodes[self->botMind->targetNodeID].nextid[i] >= 0) {
-                            if(self->botMind->lastNodeID >= 0) {
-                                    if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNodeID].nextid[i]) {
-                                            continue;
-                                    }
-                            }
-                            possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNodeID].nextid[i];
-                            possibleNextNode++;
-                    }
-            }
-            if(possibleNextNode == 0) {       
-                    self->botMind->state = FINDNEWNODE;
-                    return;
-            }
-            else {
-                    self->botMind->state = TARGETNODE;
-                    if(level.nodes[self->botMind->targetNodeID].random < 0) {
-                            nextNode = 0;
-                    }
-                    else {
-                            srand( trap_Milliseconds( ) );
-                            randnum = (int)(( (double)rand() / ((double)(RAND_MAX)+(double)(1)) ) * possibleNextNode);
-                            nextNode = randnum;
-                            //if(nextpath == possiblenextpath)
-                            //{nextpath = possiblenextpath - 1;}
-                    }
-                    self->botMind->lastNodeID = self->botMind->targetNodeID;
-                    self->botMind->targetNodeID = possibleNodes[nextNode];
-                    for(i = 0;i < 5;i++) {
-                            if(level.nodes[self->botMind->targetNodeID].nextid[i] == lasttarget) {
-                                    i = 5;
-                            }
-                    }
 
-                    self->botMind->timeFoundNode = level.time;
-                    return;
-            }
-            
-        return;
-}
 
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t targetPos;
@@ -1587,22 +1532,18 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     short startNum = -1;
     short endNum = -1;
     vec3_t start = {0,0,0}; 
-    vec3_t end = {0,0,0};
-    vec3_t  forward, right, up;
     trace_t trace, trace2;
-    
-    AngleVectors( self->client->ps.viewangles, forward, right, up );
-    CalcMuzzlePoint( self, forward, right, up, start);
-    getTargetPos(target , &end);
-    
+    botTarget_t bot;
+    setTargetEntity(&bot, self);
+    VectorCopy(self->s.pos.trBase,start);
     //set initial variable values
     for( i=0;i<MAX_NODES;i++) {
         shortDist[i] = 99999999;
         self->botMind->routeToTarget[i] = -1;
         visited[i] = 0;
     }
-    startNum = findClosestNode(start);
-    endNum = findClosestNode(end);
+    startNum = findClosestNode(bot);
+    endNum = findClosestNode(target);
     
     
     shortDist[endNum] = 0;
