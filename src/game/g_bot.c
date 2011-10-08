@@ -661,13 +661,13 @@ void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
         if(buildingIndex == ENTITYNUM_NONE) {
             buildingIndex = botFindBuilding(self, BA_A_SPAWN, -1);
         }
-        teamRush = level.time % 36000 < 18000;
+        teamRush = level.time % 300000 < 150000;
     } else {
         buildingIndex = botFindBuilding(self, BA_H_REACTOR, -1);
         if(buildingIndex == ENTITYNUM_NONE) {
             buildingIndex = botFindBuilding(self, BA_H_SPAWN, -1);
         }
-        teamRush = level.time % 36000 > 18000;
+        teamRush = level.time % 300000 > 150000;
     }
     if(buildingIndex != ENTITYNUM_NONE && teamRush ) {
         if(buildingIndex != getTargetEntityNumber(self->botMind->goal))
