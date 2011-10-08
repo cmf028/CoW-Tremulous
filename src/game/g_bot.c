@@ -478,8 +478,6 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
         botCmdBuffer->rightmove = getStrafeDirection(self);
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
-        //dont move forward as quickly to allow use to strafe correctly
-        botCmdBuffer->forwardmove = 30;
     }
     
     //need to periodically reset upmove to 0 for jump to work
