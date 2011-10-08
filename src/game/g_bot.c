@@ -481,7 +481,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t tmpVec;
     getTargetPos(self->botMind->goal, &tmpVec);
-    if(DistanceSquared(self->s.pos.trBase,tmpVec) < Square(70) || targetIsEntity(self->botMind->goal) || targetIsUndefined(self->botMind->goal)) {
+    if(DistanceSquared(self->s.pos.trBase,tmpVec) < Square(70) || targetIsEntity(self->botMind->goal)) {
         setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
     } else {
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
@@ -1052,14 +1052,6 @@ qboolean targetIsEntity( botTarget_t target) {
         return qtrue;
     else
         return qfalse;
-}
-qboolean targetIsUndefined(botTarget_t target) {
-    vec3_t compare = {0,0,0};
-    if(target.ent && !VectorCompare(target.coord, compare))
-        return qtrue;
-    else
-        return qfalse;
-        
 }
 /**setGoalEntity
  * Used to set a new goal for the bot

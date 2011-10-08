@@ -43,7 +43,6 @@ void getTargetPos(botTarget_t target, vec3_t *rVec);
 int getTargetTeam( botTarget_t target);
 int getTargetType( botTarget_t target);
 qboolean targetIsEntity( botTarget_t target);
-qboolean targetIsUndefined( botTarget_t target);
 void setGoalEntity(gentity_t *self, gentity_t *goal );
 void setGoalCoordinate(gentity_t *self, vec3_t goal );
 void setTargetEntity(botTarget_t *target, gentity_t *goal );
