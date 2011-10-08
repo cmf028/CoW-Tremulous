@@ -474,7 +474,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     self->client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
     
     //we have stopped moving forward, try to get around whatever is blocking us
-    if( botPathIsBlocked(self) ) {
+    if( botPathIsBlocked(self) || self->client->ps.velocity[1] == 0.0f) {
         botCmdBuffer->rightmove = getStrafeDirection(self);
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
