@@ -1114,6 +1114,7 @@ void G_BotSpectatorThink( gentity_t *self ) {
     self->botMind->followingRoute = qfalse;
     setTargetEntity(&self->botMind->goal, NULL);
     self->botMind->state = FINDNEWNODE;
+    self->botMind->currentModus = IDLE;
     self->botMind->targetNodeID = -1;
     self->botMind->lastNodeID = -1;
     
