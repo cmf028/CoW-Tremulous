@@ -373,18 +373,15 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
-            botCmdBuffer->upmove = 0;
         }
         
         else if( level.time - self->botMind->timeFoundNode > 10000 )
         {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
-            botCmdBuffer->upmove = 0;
         } else if(!botTargetInRange(self, self->botMind->targetNode, MASK_DEADSOLID) && level.time % 1000 == 0) {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
-            botCmdBuffer->upmove = 0;
         }
         if(distanceToTargetNode(self) < 70)
         {
@@ -427,21 +424,11 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
             if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
                 self->botMind->state = FINDNEWNODE;
                 self->botMind->timeFoundNode = level.time;
-                botCmdBuffer->upmove = 0;
-            }
-            else if(!botTargetInRange(self, self->botMind->targetNode, MASK_DEADSOLID)) {
-                self->botMind->state = FINDNEWNODE;
-                botCmdBuffer->upmove = 0;
             }
         }
         else if( level.time - self->botMind->timeFoundNode > 10000 ) {
             self->botMind->state = FINDNEWNODE;
             self->botMind->timeFoundNode = level.time;
-            botCmdBuffer->upmove = 0;
-        }
-        else if(!botTargetInRange(self, self->botMind->targetNode, MASK_DEADSOLID)) {
-            self->botMind->state = FINDNEWNODE;
-            botCmdBuffer->upmove = 0;
         }
         if(distanceToTargetNode(self) < 70) {
             self->botMind->state = FINDNEXTNODE;
