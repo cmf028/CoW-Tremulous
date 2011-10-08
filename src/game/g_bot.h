@@ -59,6 +59,8 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
 int botFindBuilding(gentity_t *self, int buildingType, int range);
 
 int findClosestNode( botTarget_t target );
+void findNewNode(gentity_t *self, usercmd_t *botCmdBuffer);
+void findNextNode(gentity_t *self);
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer);
 int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );
