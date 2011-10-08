@@ -74,6 +74,7 @@ void G_BotAdd( char *name, int team, int skill ) {
     bot->botMind->followingRoute = qfalse;
     
     setSkill(bot, skill);
+    setTargetEntity(bot->botMind->goal,&g_entities[ENTITYNUM_NONE]);
     
 
     // register user information
