@@ -1439,17 +1439,17 @@ int findClosestNode( botTarget_t target ) {
         trace_t trace;
         int i,k,n = 0;
         float distance = 0;
-        float closestNodeDistances[4] = {-1,-1,-1,-1};
-        int closestNodes[4];
+        float closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
+        int closestNodes[10];
         vec3_t start;
         getTargetPos(target, &start);
         for(i = 0; i < MAX_NODES; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have
-            for(k=0;k<4;k++) {
+            for(k=0;k<10;k++) {
                 if(distance < closestNodeDistances[k] || closestNodeDistances[k] == -1) {
                     //need to move the other elements up 1 index
-                    for(n=k;n<3;n++) {
+                    for(n=k;n<9;n++) {
                         closestNodeDistances[n+1] = closestNodeDistances[n];
                         closestNodes[n+1] = closestNodes[n];
                     }
@@ -1464,11 +1464,9 @@ int findClosestNode( botTarget_t target ) {
         }
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
-        for(i = 0; i < 4; i++) {
+        for(i = 0; i < 10; i++) {
             trap_Trace( &trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_DEADSOLID );
-            if( trace.fraction < 1.0 ) {
-                continue;
-            } else {
+            if( trace.fraction == 1.0f ) {
                 return closestNodes[i];
             }
         }
