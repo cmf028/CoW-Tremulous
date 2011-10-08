@@ -915,7 +915,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3:
                 if(distance > Square(LEVEL3_CLAW_RANGE + LEVEL3_CLAW_RANGE/2) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 9 - self->client->ps.delta_angles[PITCH]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                 } else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -928,7 +928,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 } else {       
                     if(distance > Square(LEVEL3_CLAW_RANGE + LEVEL3_CLAW_RANGE/2) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                        botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 9 - self->client->ps.delta_angles[PITCH];; //look up a bit more
+                        botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                     }else
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -1447,11 +1447,11 @@ void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
         break;
         case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
             self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 9 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
             }else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
                 self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 9 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
                 }
                 break;
