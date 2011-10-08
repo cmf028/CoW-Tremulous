@@ -348,6 +348,8 @@ void G_BotModusManager( gentity_t *self ) {
         self->botMind->state = FINDNEWNODE;
     } else if(g_bot_roam.integer > 0 && self->botMind->command != BOT_REPAIR){
         self->botMind->currentModus = ROAM;
+    } else {
+        self->botMind->currentModus = IDLE;
     }
     
 }
