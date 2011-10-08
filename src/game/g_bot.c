@@ -1388,7 +1388,7 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         
         //make the aim slow by not going the full difference
         //between the current aim Vector and the new one
-        slowness = slow*(FRAMETIME/1000.0);
+        slowness = slow*(25/1000.0);
         if(slowness > 1.0) slowness = 1.0;
         
         VectorLerp( slowness, forward, aimVec, skilledVec);
@@ -1620,10 +1620,10 @@ void setSkill(gentity_t *self, int skill) {
     //different aim for different teams
     if(self->botMind->botTeam == PTE_HUMANS) {
         self->botMind->botSkill.aimSlowness = (float) skill / 80;
-        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     } else {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
-        self->botMind->botSkill.aimShake = (int) 2 * (10 - skill);
+        self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
 }
     
