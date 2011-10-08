@@ -188,8 +188,8 @@ int getStrafeDirection(gentity_t *self, botTarget_t target) {
     
     VectorSet(traceHeight, 0.0f, 1.0f, (maxs[2] - mins[2]));
     
-    trap_Trace( &traceRight, startRight, NULL, traceHeight, end, self->s.number, MASK_DEADSOLID);
-    trap_Trace( &traceLeft, startLeft, NULL, traceHeight, end, self->s.number, MASK_DEADSOLID );
+    trap_Trace( &traceRight, startRight, NULL, traceHeight, end, self->s.number, MASK_SHOT);
+    trap_Trace( &traceLeft, startLeft, NULL, traceHeight, end, self->s.number, MASK_SHOT);
     
     if( traceRight.fraction == 1.0f && traceLeft.fraction != 1.0f ) {
         strafe = 127;
