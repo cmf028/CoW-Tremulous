@@ -7314,13 +7314,19 @@ qboolean G_admin_L1(gentity_t *ent, int skiparg ){
   }
 }*/
 extern void G_ExplodeMissile( gentity_t *ent );
+//FIXME: this is an aweful hack, pls turn it into a shader
 qboolean DrawNodes( gentity_t *ent, qboolean clear )
 {
     int i, i2;
     qboolean found = qfalse;
     gentity_t *target;
     qboolean delpath = qfalse;
-    
+    vec3_t move;
+    //long connections[level.numNodes][level.numNodes];
+    /*for(i=0;i<level.numNodes;i++) {
+        for(i2=0;i<level.numNodes;i2++)
+            connections[i][i2] = -1;
+    }*/
     if (clear == qtrue)
     {
         for ( i = 0; i < MAX_GENTITIES; i++ )
@@ -7340,6 +7346,33 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
         for (i2 = 0; i2 < 5; i2++)
         {
             if (level.nodes[i].nextid[i2] < 0) { delpath = qtrue; break; }
+            if(level.nodes[i].nextid[i2] != -1 && level.nodes[i].nextid[i2] < 1000 && i > level.nodes[i].nextid[i2]) {
+                target = G_Spawn();
+                target->classname = "PathNode";
+                target->think = nodethink;
+                target->s.eType = ET_MISSILE;
+                target->r.svFlags = SVF_USE_CURRENT_ORIGIN;
+                target->damage = 0;
+                target->splashDamage = 0;
+                target->splashRadius = 0;
+                target->s.weapon = WP_PULSE_RIFLE;
+                target->s.generic1 = WPM_PRIMARY;
+                target->s.pos.trType = TR_LINEAR;
+                target->s.pos.trTime = level.time;
+                target->parent = ent;
+                target->r.ownerNum = ent->s.number;
+                VectorCopy( level.nodes[i].coord, target->s.pos.trBase );
+                VectorCopy( level.nodes[i].coord, target->r.currentOrigin );
+                VectorSubtract(level.nodes[level.nodes[i].nextid[i2]].coord,level.nodes[i].coord , move);
+                VectorNormalize(move);
+                VectorScale(move, PRIFLE_SPEED, target->s.pos.trDelta);
+                target->nextthink = level.time + Distance(level.nodes[i].coord, level.nodes[level.nodes[i].nextid[i2]].coord)/PRIFLE_SPEED * 1000;
+                target->movepathid = level.nodes[i].nextid[i2];
+                target->pathid = i;
+                SnapVector( target->s.pos.trDelta );
+                //connections[i][level.nodes[i].nextid[i2]] = 0;
+                //connections[level.nodes[i].nextid[i2]][i] = 0;
+            }
         }
         if (delpath == qtrue)
         {
@@ -7372,27 +7405,8 @@ qboolean G_drawnodes( gentity_t *ent, int skiparg ) {
 
 void nodethink( gentity_t *ent )
 {
-  int i;
-  vec3_t pos;
-
-  if( ent->pathid < 0 || level.numNodes <= ent->pathid )
-  {
-    G_FreeEntity(ent);
-    return;
-  }
-  for( i = 0; i < 5; i++ )
-  {
-    if( level.nodes[ent->pathid].nextid[i] < 0 )
-    {
-      G_FreeEntity(ent);
-      return;
-    }
-  }
-  pos[0] = level.nodes[ent->pathid].coord[0];
-  pos[1] = level.nodes[ent->pathid].coord[1];
-  pos[2] = level.nodes[ent->pathid].coord[2];
-  VectorCopy( pos,ent->s.pos.trBase );
-  VectorCopy( pos,ent->r.currentOrigin );
+  ent->s.pos.trTime = level.time;
+  ent->nextthink = level.time + Distance(level.nodes[ent->pathid].coord, level.nodes[ent->movepathid].coord)/PRIFLE_SPEED * 1000;
 }
 
 gentity_t *spawnnode( gentity_t *self, long id )
