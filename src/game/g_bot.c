@@ -220,7 +220,8 @@ int getStrafeDirection(gentity_t *self) {
     return strafe;
 }
 qboolean botPathIsBlocked(gentity_t *self) {
-    vec3_t forward,start, end;
+    vec3_t forward, right;
+    vec3_t start, end;
     vec3_t mins, maxs;
     trace_t trace;
     gentity_t *traceEnt;
@@ -231,9 +232,13 @@ qboolean botPathIsBlocked(gentity_t *self) {
     
     BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ], mins, maxs, NULL, NULL, NULL );
     
-    AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
-    forward[ 2 ] = 0.0f; //make vector 2D by getting rid of z component
-
+    //forward vector is not necessarily pointing the direction we are moving so derive it from the right vector and the normal of the plane we are on
+    AngleVectors( self->client->ps.viewangles, NULL, right, NULL);
+    right[ 2 ] = 0.0f; //make vector 2D by getting rid of z component
+    VectorCopy(start, end);
+    end[2] -= 1000;
+    trap_Trace(&trace,self->client->ps.origin, mins, maxs, end, self->client->ps.clientNum, MASK_PLAYERSOLID);
+    CrossProduct(right, trace.plane.normal, forward);
     //scaling the vector
     VectorMA( self->client->ps.origin, maxs[0], forward, start );
     VectorMA(start, 30, forward,end);
@@ -248,7 +253,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
         else
             blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD || blockerTeam != self->client->ps.stats[STAT_PTEAM] || traceEnt->s.eType == getTargetType(self->botMind->goal) )//hitting nothing? (world doesnt count)
+    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM] || traceEnt->s.eType == getTargetType(self->botMind->goal) )//hitting nothing? (world doesnt count)
             return qfalse;
     else
         return qtrue;
