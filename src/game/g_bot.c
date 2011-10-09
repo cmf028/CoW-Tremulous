@@ -124,12 +124,9 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
         bot->botMind->command = BOT_ATTACK;
     else if( !Q_stricmp( command, "idle" ) )
         bot->botMind->command = BOT_IDLE;
-    else if( !Q_stricmp( command, "repair" ) ) {
-        if(BG_InventoryContainsWeapon(WP_HBUILD, bot->client->ps.stats)) {
-            bot->botMind->command = BOT_REPAIR;
-            G_ForceWeaponChange( bot, WP_HBUILD );
-        }
-    } else if( !Q_stricmp( command, "spawnrifle" ) )
+    else if( !Q_stricmp( command, "repair" ) )
+        bot->botMind->command = BOT_REPAIR;
+    else if( !Q_stricmp( command, "spawnrifle" ) )
         bot->botMind->spawnItem = WP_MACHINEGUN;
     else if( !Q_stricmp( command, "spawnckit" ) )
         bot->botMind->spawnItem = WP_HBUILD;
