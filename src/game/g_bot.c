@@ -161,13 +161,11 @@ qboolean botShouldJump(gentity_t *self) {
     start[2] += mins[2] + stepsize;//mins[2] should be negative
     
     VectorMA(start, 10.0f, forward, end);
-    
-    trap_Trace( &lowerTrace, start, NULL, NULL, end, self->s.number, MASK_SHOT );
     start[2] += jumpHeight;
     end[2] += jumpHeight;
     trap_Trace( &upperTrace, start, NULL, NULL, end, self->s.number, MASK_SHOT );
     
-    if(lowerTrace.fraction < 1.0f && upperTrace.fraction >= 1.0f)
+    if(upperTrace.fraction >= 1.0f)
         return qtrue;
     else
         return qfalse;
