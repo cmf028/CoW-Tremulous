@@ -237,7 +237,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
         else
             blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD || blockerTeam != self->client->ps.stats[STAT_PTEAM] )//hitting nothing? (world doesnt count)
+    if( trace.fraction == 1.0f || trace.entityNum == ENTITYNUM_WORLD || blockerTeam != self->client->ps.stats[STAT_PTEAM] || trace.entityNum == getTargetEntityNumber(self->botMind->goal) )//hitting nothing? (world doesnt count)
             return qfalse;
     else
         return qtrue;
