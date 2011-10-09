@@ -137,29 +137,40 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
 }
 
 qboolean botShouldJump(gentity_t *self) {
-    trace_t trace;
-    gentity_t *traceEnt;
-    vec3_t mins,maxs;
-    vec3_t end;
-    vec3_t forward,right,up;
-    vec3_t muzzle;
+    float           jumpSpeed, jumpHeight, gravity;
+    int                     selfClass = self->client->ps.stats[ STAT_PCLASS ];
+    vec3_t          mins, maxs, start, end;
+    int                     stepsize = 18;
+    vec3_t          forward;
+    trace_t         lowerTrace, upperTrace;
     
+    if(self->s.groundEntityNum == ENTITYNUM_NONE)
+        return qfalse;
     
-    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], mins, maxs, NULL, NULL, NULL);
+    //getting max jump height
+    jumpSpeed = BG_FindJumpMagnitudeForClass( selfClass );
+    gravity = self->client->ps.gravity;
+    jumpHeight = (jumpSpeed*jumpSpeed)/(gravity*2);
     
-    AngleVectors(self->client->ps.viewangles,forward,right,up);
-    CalcMuzzlePoint(self,forward,right,up,muzzle);
-    VectorMA(muzzle, 10, forward, end);
+    BG_FindBBoxForClass( selfClass, mins, maxs, NULL, NULL, NULL );
+    AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
+    forward[2] = 0.0f;
+    VectorNormalize(forward);
     
-    trap_Trace(&trace, self->s.origin, mins, maxs, end, self->s.number,MASK_SHOT);
+    VectorMA(self->s.origin, maxs[0], forward, start);
+    start[2] += mins[2] + stepsize;//mins[2] should be negative
     
-    traceEnt = &g_entities[trace.entityNum];
+    VectorMA(start, 10.0f, forward, end);
     
-    if(traceEnt->s.eType == ET_BUILDABLE)
+    trap_Trace( &lowerTrace, start, NULL, NULL, end, self->s.number, MASK_SHOT );
+    start[2] += jumpHeight;
+    end[2] += jumpHeight;
+    trap_Trace( &upperTrace, start, NULL, NULL, end, self->s.number, MASK_SHOT );
+    
+    if(lowerTrace.fraction < 1.0f && upperTrace.fraction >= 1.0f)
         return qtrue;
     else
         return qfalse;
-
 }
 int getStrafeDirection(gentity_t *self) {
     
