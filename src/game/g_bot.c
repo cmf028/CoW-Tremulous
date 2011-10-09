@@ -1490,7 +1490,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     VectorCopy(self->s.pos.trBase,start);
     //set initial variable values
     for( i=0;i<MAX_NODES;i++) {
-        shortDist[i] = 99999999;
+        shortDist[i] = INFINITE;
         self->botMind->routeToTarget[i] = -1;
         visited[i] = 0;
     }
@@ -1500,15 +1500,20 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     
     shortDist[endNum] = 0;
     //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
-    for (k = 0; k < MAX_NODES; ++k) {
+    //Dijkstra's Algorithm
+    //TODO: Implement A* algorithm
+    for (k = 0; k < level.numNodes; ++k) {
         bestNode = -1;
-        for (i = 0; i < MAX_NODES; ++i) {
+        for (i = 0; i < level.numNodes; ++i) {
             if (!visited[i] && ((bestNode == -1) || (shortDist[i] < shortDist[bestNode])))
                 bestNode = i;
         }
-
+        if(bestNode == -1)
+            break;      //there are no more nodes with distance < infinite
+        if(bestNode == startNum) //we have found a shortest path, no need to continue
+            break;
         visited[bestNode] = 1;
-
+        
         for (i = 0; i < MAX_PATH_NODES; ++i) {
             childNode = level.nodes[bestNode].nextid[i];
             if (childNode != -1 && childNode < 1000 ) {
