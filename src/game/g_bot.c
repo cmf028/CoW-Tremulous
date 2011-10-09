@@ -576,7 +576,7 @@ void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
     getTargetPos(self->botMind->goal, &targetPos);
     if(DistanceSquared(self->s.pos.trBase, targetPos) > Square(100))
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
-    else {
+    else if( self->client->time10000 % 1000 == 0){
         // sell current weapon
         for( i = WP_NONE + 1; i < WP_NUM_WEAPONS; i++ )
         {
