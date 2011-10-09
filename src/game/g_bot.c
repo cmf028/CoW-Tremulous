@@ -142,7 +142,7 @@ qboolean botShouldJump(gentity_t *self) {
     vec3_t          mins, maxs, start, end;
     int                     stepsize = 18;
     vec3_t          forward;
-    trace_t         lowerTrace, upperTrace;
+    trace_t         upperTrace;
     
     if(self->s.groundEntityNum == ENTITYNUM_NONE)
         return qfalse;
