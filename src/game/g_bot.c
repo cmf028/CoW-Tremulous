@@ -440,7 +440,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     vec3_t tmpVec;
     
     //aim at the destination
-    botGetAimLocation(target, &tmpVec);
+    botGetAimLocation(self, target, &tmpVec);
     
     if(!targetIsEntity(target))
         botSlowAim(self, tmpVec, 0.5f, &tmpVec);
@@ -837,7 +837,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             secondaryRange = 0; //no secondary attack
     }
     getTargetPos(target, &targetPos);
-    botGetAimLocation(target, &targetPos);
+    botGetAimLocation(self, target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     distance = DistanceSquared(self->s.pos.trBase, targetPos);
     distance = (int) distance - myMax/2 - targetMax/2;
@@ -1181,15 +1181,27 @@ void G_BotIntermissionThink( gclient_t *client )
 {
     client->readyToExit = qtrue;
 }
-void botGetAimLocation( botTarget_t target, vec3_t *aimLocation) {
+void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation) {
+    trace_t trace;
+    vec3_t end;
+    vec3_t mins;
     //get the position of the enemy
     getTargetPos(target, aimLocation);
     //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
     if(getTargetType(target) != ET_BUILDABLE && getTargetTeam(target) == PTE_HUMANS && getTargetEntityNumber(target) != ENTITYNUM_NONE)
         (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].r.maxs[2] * 0.85;
-    if(getTargetType(target) == ET_BUILDABLE) {
+    else if(getTargetType(target) == ET_BUILDABLE || getTargetTeam(target) == PTE_ALIENS) {
         VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
+    } else { 
+        //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
+        BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], mins, NULL, NULL, NULL, NULL);
+        VectorCopy(*aimLocation,end);
+        end[2] -= 1000;
+        trap_Trace(&trace, (*aimLocation), NULL,NULL,end,ENTITYNUM_NONE, MASK_SHOT);
+        VectorCopy(trace.endpos,end);
+        end[2] -= mins[2];
+        (*aimLocation)[2] = end[2] + self->client->ps.viewheight;
     }
 }
 
