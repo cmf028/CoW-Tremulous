@@ -139,10 +139,12 @@ void G_BotCmd( gentity_t *master, int clientNum, char *command) {
 qboolean botShouldJump(gentity_t *self) {
     float           jumpSpeed, jumpHeight, gravity;
     int                     selfClass = self->client->ps.stats[ STAT_PCLASS ];
-    vec3_t          mins, maxs, start, end;
-    int                     stepsize = 18;
-    vec3_t          forward;
-    trace_t         upperTrace;
+    int stepSize = 18;
+    vec3_t          mins, maxs, start;
+    vec3_t          forward,right;
+    vec3_t startLeft, startRight, endLeft, endRight;
+    trace_t         traceRightLow,traceLeftLow,traceRightHigh,traceLeftHigh;
+    vec3_t halfMins,halfMaxs;
     
     if(self->s.groundEntityNum == ENTITYNUM_NONE)
         return qfalse;
@@ -153,19 +155,33 @@ qboolean botShouldJump(gentity_t *self) {
     jumpHeight = (jumpSpeed*jumpSpeed)/(gravity*2);
     
     BG_FindBBoxForClass( selfClass, mins, maxs, NULL, NULL, NULL );
-    AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
+    AngleVectors( self->client->ps.viewangles, forward, right, NULL);
     forward[2] = 0.0f;
     VectorNormalize(forward);
     
     VectorMA(self->s.origin, maxs[0], forward, start);
-    start[2] += mins[2] + stepsize;//mins[2] should be negative
+    //start[2] += mins[2];//mins[2] should be negative
+    start[2] += stepSize;
+    VectorScale(right, maxs[1]/2,right);
+    VectorAdd(start, right, startRight);
+    VectorSubtract(start, right, startLeft);
+    VectorSet(halfMins,mins[0],mins[1]/2,mins[2]);
+    VectorSet(halfMaxs,maxs[0],maxs[1]/2,maxs[2]);
+    VectorMA(startRight, 30.0f, forward, endRight);
+    VectorMA(startLeft, 30.0f, forward, endLeft);
     
-    VectorMA(start, 10.0f, forward, end);
-    start[2] += jumpHeight;
-    end[2] += jumpHeight;
-    trap_Trace( &upperTrace, start, NULL, NULL, end, self->s.number, MASK_SHOT );
+    //trace half the bbox from the left and right sides, before and after jump, to see if jumping will help us get over obstacle
+    trap_Trace(&traceRightLow, startRight, halfMins,halfMaxs, endRight, self->s.number, MASK_SHOT);
+    trap_Trace(&traceLeftLow, startLeft, halfMins, halfMaxs, endLeft, self->s.number, MASK_SHOT);
     
-    if(upperTrace.fraction >= 1.0f)
+    startLeft[2] += jumpHeight;
+    endRight[2] += jumpHeight;
+    endLeft[2] += jumpHeight;
+    endRight[2] += jumpHeight;
+    trap_Trace( &traceLeftHigh, startLeft, halfMins, halfMaxs, endLeft, self->s.number, MASK_SHOT );
+    trap_Trace( &traceRightHigh,startRight,halfMins, halfMaxs, endRight, self->s.number, MASK_SHOT);
+    
+    if(traceRightLow.fraction < traceRightHigh.fraction || traceLeftLow.fraction < traceLeftHigh.fraction)
         return qtrue;
     else
         return qfalse;
