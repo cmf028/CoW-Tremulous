@@ -1228,14 +1228,15 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
     
     
     if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target) && getTargetTeam(target) == PTE_HUMANS) {
-        //make lucifer cannons aim ahead based on the target's velocity
-        if(self->s.weapon == WP_LUCIFER_CANNON) {
-            VectorMA(*aimLocation, Distance(self->s.pos.trBase, *aimLocation) / LCANNON_SPEED, target.ent->s.pos.trDelta, *aimLocation);
-        }
+        
         (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].r.maxs[2] * 0.85;
         
     } else if(getTargetType(target) == ET_BUILDABLE || getTargetTeam(target) == PTE_ALIENS) {
         VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
+        //make lucifer cannons aim ahead based on the target's velocity
+        if(self->s.weapon == WP_LUCIFER_CANNON) {
+            VectorMA(*aimLocation, Distance(self->s.pos.trBase, *aimLocation) / LCANNON_SPEED, target.ent->s.pos.trDelta, *aimLocation);
+        }
     } else { 
         //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
         BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], mins, NULL, NULL, NULL, NULL);
