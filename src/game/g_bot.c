@@ -236,7 +236,7 @@ int getStrafeDirection(gentity_t *self) {
 }
 qboolean botPathIsBlocked(gentity_t *self) {
     vec3_t forward, right, up;
-    vec3_t start;
+    vec3_t start, end;
     vec3_t mins, maxs;
     trace_t trace;
     gentity_t *traceEnt;
