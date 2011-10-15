@@ -61,6 +61,8 @@ int botFindBuilding(gentity_t *self, int buildingType, int range);
 int findClosestNode( botTarget_t target );
 void findNewNode(gentity_t *self, usercmd_t *botCmdBuffer);
 void findNextNode(gentity_t *self);
+qboolean haveVisited( gentity_t *self, int id);
+void addVisited(gentity_t *self,int id);
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer);
 int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );

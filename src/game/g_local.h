@@ -146,7 +146,6 @@ typedef struct
     vec_t *defensePoint;
     int                   targetNodeID;
     int                   timeFoundNode;
-    int                   lastNodeID;
     botstate              state;
     qboolean              followingRoute;
     botTarget_t           targetNode;
@@ -156,6 +155,7 @@ typedef struct
     int lastRouteSearch;
     botSkill_t botSkill;
     botModus_t currentModus;
+    int visited[5]; //used for random roaming
 } botMemory_t;
 //============================================================================
 

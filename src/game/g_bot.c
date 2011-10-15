@@ -399,7 +399,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         doLastNodeAction(self, botCmdBuffer);
         
         //apparently, we are stuck, so find a new route to the goal and use that
-        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout)
+        if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->visited[4]].timeout)
         {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
@@ -412,7 +412,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         if(distanceToTargetNode(self) < 70)
         {
-            self->botMind->lastNodeID = self->botMind->targetNodeID;
+            addVisited(self, self->botMind->targetNodeID);
             self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNodeID];
             self->botMind->timeFoundNode = level.time;
             
@@ -446,9 +446,9 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
         setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
         G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
         
-        if(self->botMind->lastNodeID >= 0 ) {
+        if(self->botMind->visited[4] >= 0 ) {
             doLastNodeAction(self, botCmdBuffer);
-            if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->lastNodeID].timeout) {
+            if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->visited[4]].timeout) {
                 self->botMind->state = FINDNEWNODE;
                 self->botMind->timeFoundNode = level.time;
             }
@@ -1124,6 +1124,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
     
     
 void G_BotSpectatorThink( gentity_t *self ) {
+    int i;
     if( self->client->ps.pm_flags & PMF_QUEUED) {
         //we're queued to spawn, all good
         //check for humans in the spawn que
@@ -1150,7 +1151,8 @@ void G_BotSpectatorThink( gentity_t *self ) {
     self->botMind->state = FINDNEWNODE;
     self->botMind->currentModus = IDLE;
     self->botMind->targetNodeID = -1;
-    self->botMind->lastNodeID = -1;
+    for(i=0;i<5;i++)
+        self->botMind->visited[i] = -1;
     
     if( self->client->sess.sessionTeam == TEAM_SPECTATOR ) {
         int teamnum = self->client->pers.teamSelection;
@@ -1479,7 +1481,7 @@ int findClosestNode( botTarget_t target ) {
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t targetPos;
     getTargetPos(self->botMind->goal,&targetPos);
-    switch(level.nodes[self->botMind->lastNodeID].action)
+    switch(level.nodes[self->botMind->visited[4]].action)
     {
         case BOT_JUMP:  
             
@@ -1544,7 +1546,6 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     startNum = findClosestNode(bot);
     endNum = findClosestNode(target);
     
-    
     shortDist[endNum] = 0;
     //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
     //Dijkstra's Algorithm
@@ -1591,11 +1592,13 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
 }
 void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     botTarget_t target;
-    
+    int i;
     int closestNode;
     setTargetEntity(&target, self);
     closestNode = findClosestNode(target);
-    self->botMind->lastNodeID = -1;
+    for(i=0;i<5;i++) {
+        self->botMind->visited[i] = -1;
+    }
     if(closestNode != -1) {
         self->botMind->targetNodeID = closestNode;
         self->botMind->timeFoundNode = level.time;
@@ -1621,14 +1624,12 @@ void findNextNode( gentity_t *self )
     for(i = 0; i < 5; i++) {
         if(level.nodes[self->botMind->targetNodeID].nextid[i] < level.numNodes &&
             level.nodes[self->botMind->targetNodeID].nextid[i] >= 0) {
-            if(self->botMind->lastNodeID >= 0) {
-                if(self->botMind->lastNodeID == level.nodes[self->botMind->targetNodeID].nextid[i]) {
+                if(haveVisited(self,level.nodes[self->botMind->targetNodeID].nextid[i])) {
                     continue;
                 }
-            }
-            possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNodeID].nextid[i];
-        possibleNextNode++;
-            }
+                possibleNodes[possibleNextNode] = level.nodes[self->botMind->targetNodeID].nextid[i];
+                possibleNextNode++;
+        }
     }
     if(possibleNextNode == 0) {
         self->botMind->state = FINDNEWNODE;
@@ -1646,7 +1647,7 @@ void findNextNode( gentity_t *self )
             //if(nextpath == possiblenextpath)
             //{nextpath = possiblenextpath - 1;}
             }
-            self->botMind->lastNodeID = self->botMind->targetNodeID;
+            addVisited(self, self->botMind->targetNodeID);
             self->botMind->targetNodeID = possibleNodes[nextNode];
             for(i = 0;i < 5;i++) {
                 if(level.nodes[self->botMind->targetNodeID].nextid[i] == lasttarget) {
@@ -1660,6 +1661,21 @@ void findNextNode( gentity_t *self )
         
         return;
     }
+void addVisited(gentity_t *self,int id) {
+    int i;
+    for(i = 0; i < 4; i++) {
+        self->botMind->visited[i] = self->botMind->visited[i+1];
+    }
+    self->botMind->visited[4] = id;
+}
+qboolean haveVisited( gentity_t *self, int id) {
+    int i;
+    for(i=0; i < 5; i++) {
+        if(self->botMind->visited[i] == id)
+            return qtrue;
+    }
+    return qfalse;
+}
 void setSkill(gentity_t *self, int skill) {
     self->botMind->botSkill.level = skill;
     //different aim for different teams
