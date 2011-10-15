@@ -277,7 +277,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
         else
             blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || (blockerTeam != self->client->ps.stats[STAT_PTEAM] && trace.entityNum != ENTITYNUM_WORLD) || self->botMind->currentModus == REPAIR )//hitting nothing?  OR hitting something not on our team (world doesnt count) OR we are reparing
+    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM] || self->botMind->currentModus == REPAIR )//hitting nothing? (world doesnt count)
             return qfalse;
     else
         return qtrue;
@@ -512,9 +512,12 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     
     //we have stopped moving forward, try to get around whatever is blocking us
     if( botPathIsBlocked(self) || self->client->ps.velocity[1] == 0.0f) {
-        botCmdBuffer->rightmove = getStrafeDirection(self);
+        
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
+        
+        botCmdBuffer->rightmove = getStrafeDirection(self);
+            
     }
     
     //need to periodically reset upmove to 0 for jump to work
@@ -1231,14 +1234,14 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
     //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
     
-    if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target)) {
+    if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target) && getTargetTeam(target) == PTE_HUMANS) {
         //make lucifer cannons aim ahead based on the target's velocity
         if(self->s.weapon == WP_LUCIFER_CANNON) {
             VectorMA(*aimLocation, Distance(self->s.pos.trBase, *aimLocation) / LCANNON_SPEED, target.ent->s.pos.trDelta, *aimLocation);
         }
-        (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].client->ps.viewheight;
+        (*aimLocation)[2] += g_entities[getTargetEntityNumber(target)].r.maxs[2] * 0.85;
         
-    } else if(getTargetType(target) == ET_BUILDABLE) {
+    } else if(getTargetType(target) == ET_BUILDABLE || getTargetTeam(target) == PTE_ALIENS) {
         VectorCopy( g_entities[getTargetEntityNumber(target)].s.origin, *aimLocation );
     } else { 
         //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
