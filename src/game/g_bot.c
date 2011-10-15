@@ -475,7 +475,9 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     //aim at the destination
     botGetAimLocation(self, target, &tmpVec);
     
-    if(!targetIsEntity(target))
+    //aim faster than skill if targeting node so we dont fall off path
+    //also aim fast when trying to get to arm to buy, medi to heal, or building to repair, so we dont end up circling the target
+    if(!targetIsEntity(target) || self->botMind->currentModus == REPAIR || self->botMind->currentModus == BUY || self->botMind->currentModus == HEAL)
         botSlowAim(self, tmpVec, 0.5f, &tmpVec);
     else
         botSlowAim(self, tmpVec, self->botMind->botSkill.aimSlowness, &tmpVec);
