@@ -43,8 +43,6 @@ int G_BotEvolveToClass( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer
 
     if( ent->client->ps.stats[ STAT_HEALTH ] <= 0 )
         return 0;
-   
-    botCmdBuffer->upmove = 0;
 
     clientNum = ent->client - level.clients;
 
@@ -88,7 +86,7 @@ int G_BotEvolveToClass( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer
     {
         if( ( ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBING ) ||
             ( ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBINGCEILING ) )
-            return 0;
+            ent->client->pers.cmd.upmove = 0;
 
         //check there are no humans nearby
         VectorAdd( ent->client->ps.origin, range, maxs );
