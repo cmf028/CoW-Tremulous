@@ -43,7 +43,7 @@ typedef struct gclient_s gclient_t;
 #define INTERMISSION_DELAY_TIME 1000
 #define SP_INTERMISSION_DELAY_TIME 5000
 
-#define MAX_NODES       200 //try not to make it over 1000 or there will be problems.
+#define MAX_NODES       500 //try not to make it over 1000 or there will be problems.
 #define MAX_PATH_NODES  5 //do not changed
 
 // gentity->flags
