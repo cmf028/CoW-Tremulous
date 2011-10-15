@@ -195,7 +195,7 @@ int getStrafeDirection(gentity_t *self) {
     vec3_t forward,right;
     vec3_t endRight,endLeft;
     
-    int strafe;
+    int strafe = 0;
     BG_FindBBoxForClass( self->client->ps.stats[STAT_PCLASS], mins, maxs, NULL, NULL, NULL);
     AngleVectors( self->client->ps.viewangles,forward , right, NULL);
     
@@ -222,16 +222,7 @@ int getStrafeDirection(gentity_t *self) {
         strafe = 127;
     } else if( traceRight.fraction != 1.0f && traceLeft.fraction == 1.0f ) {
         strafe = -127;
-        
-        //we dont know which direction to strafe, so strafe randomly
-    } else {
-        if((self->client->time10000 % 5000) > 2500)
-            strafe = 127;
-        else
-            strafe = -127;
     }
-        
-    
     return strafe;
 }
 qboolean botPathIsBlocked(gentity_t *self) {
@@ -268,9 +259,11 @@ qboolean botPathIsBlocked(gentity_t *self) {
         else if(traceEnt->client)
             blockerTeam = traceEnt->client->ps.stats[STAT_PTEAM];
         else
-            blockerTeam = PTE_NONE;
+            blockerTeam = self->client->ps.stats[STAT_PTEAM]; //we are colliding with world or something weird... so make us return true
+    } else {
+        blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM] || self->botMind->currentModus == REPAIR )//hitting nothing? (world doesnt count)
+    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM])//hitting nothing?
             return qfalse;
     else
         return qtrue;
@@ -506,7 +499,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     self->client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
     
     //we have stopped moving forward, try to get around whatever is blocking us
-    if( botPathIsBlocked(self) || self->client->ps.velocity[1] == 0.0f) {
+    if( botPathIsBlocked(self)) {
         
         if(botShouldJump(self))
             botCmdBuffer->upmove = 127;
