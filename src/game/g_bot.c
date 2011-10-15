@@ -835,11 +835,11 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             break;
         case WP_ALEVEL3:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 900; //An arbitrary value for pounce, has nothing to do with actual range
+            secondaryRange = 500; //An arbitrary value for pounce, has nothing to do with actual range
             break;
         case WP_ALEVEL3_UPG:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 900; //An arbitrary value for pounce and barbs, has nothing to do with actual range
+            secondaryRange = 500; //An arbitrary value for pounce and barbs, has nothing to do with actual range
             break;
         case WP_ALEVEL4:
             range = LEVEL4_CLAW_RANGE;
@@ -945,7 +945,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //zap
                 break;
             case PCL_ALIEN_LEVEL3:
-                if(distance > Square(LEVEL3_CLAW_RANGE + LEVEL3_CLAW_RANGE/2) && 
+                if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
                     botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
@@ -954,11 +954,12 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                 break;
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
-                    distance > Square(LEVEL3_CLAW_RANGE) ) {
+                    distance > Square(2 * LEVEL3_CLAW_RANGE) && getTargetType(self->botMind->goal) == ET_BUILDABLE) {
                     botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
+                    botCmdBuffer->forwardmove = 0; //dont move while sniping
                 } else {       
-                    if(distance > Square(LEVEL3_CLAW_RANGE + LEVEL3_CLAW_RANGE/2) && 
+                    if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
