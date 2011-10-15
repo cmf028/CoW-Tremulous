@@ -236,7 +236,7 @@ int getStrafeDirection(gentity_t *self) {
 }
 qboolean botPathIsBlocked(gentity_t *self) {
     vec3_t forward, right, up;
-    vec3_t start, end;
+    vec3_t start;
     vec3_t mins, maxs;
     trace_t trace;
     gentity_t *traceEnt;
@@ -251,18 +251,11 @@ qboolean botPathIsBlocked(gentity_t *self) {
     AngleVectors( self->client->ps.viewangles, NULL, right, NULL);
     right[ 2 ] = 0.0f; //make vector 2D by getting rid of z component
     VectorNormalize(right);
-    VectorCopy(self->client->ps.origin, end);
-    end[2] -= 1000;
-    trap_Trace(&trace,self->client->ps.origin, mins, maxs, end, self->client->ps.clientNum, MASK_PLAYERSOLID);
-    if(trace.fraction >= 1.0f) {
-    VectorCopy(trace.plane.normal,up);
+    VectorCopy(self->client->ps.grapplePoint,up);
     VectorNormalize(up);
-    CrossProduct(right, up, forward);
+    CrossProduct(up, right, forward);
     VectorNormalize(forward);
-    } else {
-        AngleVectors(self->client->ps.viewangles, forward, NULL, NULL);
-        forward[2] = 0.0f;
-    }
+    
     //scaling the vector
     VectorMA( self->client->ps.origin, maxs[0], forward, start );
     VectorMA(start, 30, forward,end);
