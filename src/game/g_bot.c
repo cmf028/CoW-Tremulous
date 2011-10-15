@@ -277,7 +277,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
         else
             blockerTeam = PTE_NONE;
     }
-    if( trace.fraction == 1.0f || blockerTeam != self->client->ps.stats[STAT_PTEAM] || self->botMind->currentModus == REPAIR )//hitting nothing? (world doesnt count)
+    if( trace.fraction == 1.0f || (blockerTeam != self->client->ps.stats[STAT_PTEAM] && trace.entityNum != ENTITYNUM_WORLD) || self->botMind->currentModus == REPAIR )//hitting nothing?  OR hitting something not on our team (world doesnt count) OR we are reparing
             return qfalse;
     else
         return qtrue;
