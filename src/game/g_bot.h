@@ -110,6 +110,15 @@ int G_BotBuyWeapon(gentity_t *ent, int weapon);
 //when human bots reach this health or below (and no medkit/enemy) they will head back to the base to heal when in range of medi as defined by BOT_MEDI_RANGE
 #define BOT_LOW_HP 100
 
+//When the bot gets closer than these distances to the enemy (and they can see said enemy), they will stop following the route and attack them by aiming at the target and going forward/dodging
+#define DRETCH_RANGE 300
+#define BASI_RANGE 300
+#define MARA_RANGE 400
+#define DRAGOON_RANGE 500
+
+//AKA: the tyrant's claw range
+#define TYRANT_RANGE 128
+
 //TODO: implement the rest of these, currently they do nothing :)
 
 //when the bots get closer than this distance to an enemy Egg/Node, they will head toward it (killing stuff in the way if need be) instead of roaming randomly

@@ -412,7 +412,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         //our route has ended or we have been told to quit following it 
         //can we see the goal? Then go directly to it. Else find a new route and folow it
-    } else if(botTargetInRange(self, self->botMind->goal, MASK_SHOT)){
+    } else if(botTargetInRange(self, self->botMind->goal, MASK_DEADSOLID)){
         G_BotGoto(self,self->botMind->goal,botCmdBuffer);
     } else {
         findRouteToTarget(self, self->botMind->goal);
@@ -700,35 +700,42 @@ void G_BotReactToEnemy(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t forward,right,up,muzzle, targetPos;
     AngleVectors(self->client->ps.viewangles, forward, right, up);
     CalcMuzzlePoint(self, forward, right, up, muzzle);
+    
     switch(self->client->ps.stats[STAT_PCLASS]) {
         case PCL_ALIEN_LEVEL0:
+            getTargetPos(self->botMind->goal, &targetPos);
+            //stop following the route if close enough
+            if(DistanceSquared(self->s.pos.trBase, targetPos) <= Square(DRETCH_RANGE))
+                self->botMind->followingRoute = qfalse;
+            //dodge
+                G_BotDodge(self,botCmdBuffer);
+            break;
         case PCL_ALIEN_LEVEL1:
         case PCL_ALIEN_LEVEL1_UPG:
-            //stop following a route since we can wall walk
-            self->botMind->followingRoute = qfalse;
+            getTargetPos(self->botMind->goal, &targetPos);
+            //stop following the route if close enough
+            if(DistanceSquared(self->s.pos.trBase, targetPos) <= Square(BASI_RANGE))
+                self->botMind->followingRoute = qfalse;
             //dodge
             G_BotDodge(self,botCmdBuffer);
             break;
         case PCL_ALIEN_LEVEL2:
         case PCL_ALIEN_LEVEL2_UPG:
-            if(DistanceSquared(self->s.pos.trBase, level.nodes[self->botMind->targetNodeID].coord) > Square(300))
-                botCmdBuffer->upmove = 20;
+            getTargetPos(self->botMind->goal,&targetPos);
+            if(DistanceSquared(self->s.pos.trBase, targetPos) <= Square(MARA_RANGE))
+                self->botMind->followingRoute = qfalse;
+            G_BotDodge(self,botCmdBuffer);
             break;
         case PCL_ALIEN_LEVEL3:
         case PCL_ALIEN_LEVEL3_UPG:
-            //self->botMind->followingRoute = qfalse;
-            /*
-            getTargetPos(self->botMind->goal,&targetPos);
-            //pounce to the target
-            if(DistanceSquared( muzzle, targetPos ) > Square(LEVEL3_CLAW_RANGE) && 
-                self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                //look up a bit more
-                botCmdBuffer->angles[PITCH] -= 3000.0f;
-                botCmdBuffer->buttons |= BUTTON_ATTACK2;
-            }*/
+            getTargetPos(self->botMind->goal, &targetPos);
+            if(DistanceSquared(self->s.pos.trBase, targetPos) <= Square(DRAGOON_RANGE))
+                self->botMind->followingRoute = qfalse;
             break;
         case PCL_ALIEN_LEVEL4:
             getTargetPos(self->botMind->goal, &targetPos);
+            if(DistanceSquared(self->s.pos.trBase, targetPos) <= Square(TYRANT_RANGE))
+                self->botMind->followingRoute = qfalse;
             //use charge to approach more quickly
             if (DistanceSquared( muzzle, targetPos) > Square(LEVEL4_CLAW_RANGE))
                 botCmdBuffer->buttons |= BUTTON_ATTACK2;
@@ -1384,7 +1391,7 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     getTargetPos(target, &targetPos);
-    dynamicTrace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, mask);
+    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, mask);
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
@@ -1461,7 +1468,7 @@ int findClosestNode( botTarget_t target ) {
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
-            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_SHOT);
+            trap_Trace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_DEADSOLID);
             if( trace.fraction == 1.0f ) {
                 return closestNodes[i];
             }
