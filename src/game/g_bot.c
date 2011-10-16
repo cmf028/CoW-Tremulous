@@ -1443,7 +1443,7 @@ int findClosestNode( botTarget_t target ) {
         int i,k,n = 0;
         float distance = 0;
         float closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
-        int closestNodes[10];
+        int closestNodes[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
         vec3_t start;
         getTargetPos(target, &start);
         for(i = 0; i < level.numNodes; i++) {
@@ -1459,7 +1459,7 @@ int findClosestNode( botTarget_t target ) {
                     closestNodeDistances[k] = distance;
                     closestNodes[k] = i;
                     //get out of inner loop
-                    break;
+                    k=10;
                 } else {
                     continue;
                 }
@@ -1469,7 +1469,7 @@ int findClosestNode( botTarget_t target ) {
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
             dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_SHOT);
-            if( trace.fraction == 1.0f ) {
+            if( trace.fraction == 1.0f && closestNodes[i] != -1) {
                 return closestNodes[i];
             }
         }
