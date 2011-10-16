@@ -67,6 +67,7 @@ void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer);
 int distanceToTargetNode(gentity_t *self);
 void findRouteToTarget( gentity_t *self, botTarget_t target );
 void setNewRoute(gentity_t *self);
+void dynamicTrace(trace_t *trace, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int skipNum, int mask);
 
 qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask );
 qboolean G_BotCheckForSpawningPlayers( gentity_t *self );

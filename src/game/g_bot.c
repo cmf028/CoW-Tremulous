@@ -412,7 +412,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
         }
         //our route has ended or we have been told to quit following it 
         //can we see the goal? Then go directly to it. Else find a new route and folow it
-    } else if(botTargetInRange(self, self->botMind->goal, MASK_DEADSOLID)){
+    } else if(botTargetInRange(self, self->botMind->goal, MASK_SHOT)){
         G_BotGoto(self,self->botMind->goal,botCmdBuffer);
     } else {
         findRouteToTarget(self, self->botMind->goal);
@@ -1384,7 +1384,7 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
 
     CalcMuzzlePoint( self, forward, right, up, muzzle );
     getTargetPos(target, &targetPos);
-    trap_Trace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, mask);
+    dynamicTrace( &trace, muzzle, NULL, NULL,targetPos, self->s.number, mask);
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
@@ -1461,7 +1461,7 @@ int findClosestNode( botTarget_t target ) {
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
-            trap_Trace( &trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_DEADSOLID );
+            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_SHOT);
             if( trace.fraction == 1.0f ) {
                 return closestNodes[i];
             }
@@ -1572,10 +1572,10 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
         
         //can we see the second node?
-        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
+        dynamicTrace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
         
         //check if we are blocked from getting there
-        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
+        dynamicTrace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
         if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
@@ -1679,5 +1679,20 @@ void setSkill(gentity_t *self, int skill) {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
         self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
+}
+//use this to trace through buildings and players AKA: dynamically placed objects
+//its not very efficient when there are multiple things to trace through in a row, but its the only option we have :(
+void dynamicTrace(trace_t *trace, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int skipNum, int mask) {
+    int times = 0;
+    vec3_t forward;
+    VectorSubtract(end,start, forward);
+    VectorNormalize(forward);
+    do {
+        trap_Trace(trace, start, mins, maxs, end, skipNum, mask);
+        skipNum = trace->entityNum;
+        VectorMA(trace->endpos, 1, forward, start);
+        times++;
+    } while(trace->entityNum < ENTITYNUM_MAX_NORMAL && trace->fraction < 1.0 && times < 10);
+    
 }
     
