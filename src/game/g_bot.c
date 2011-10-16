@@ -1546,6 +1546,10 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     startNum = findClosestNode(bot);
     endNum = findClosestNode(target);
     
+    //no closestnode
+    if(startNum == -1 || endNum == -1)
+        return;
+    
     shortDist[endNum] = 0;
     //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
     //Dijkstra's Algorithm
