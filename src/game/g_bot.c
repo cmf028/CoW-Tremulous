@@ -1468,7 +1468,7 @@ int findClosestNode( botTarget_t target ) {
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
-            trap_Trace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_DEADSOLID);
+            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_SHOT);
             if( trace.fraction == 1.0f ) {
                 return closestNodes[i];
             }
@@ -1579,10 +1579,10 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
         
         //can we see the second node?
-        trap_Trace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
+        dynamicTrace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
         
         //check if we are blocked from getting there
-        trap_Trace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
+        dynamicTrace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
         if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
@@ -1699,7 +1699,7 @@ void dynamicTrace(trace_t *trace, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
         skipNum = trace->entityNum;
         VectorMA(trace->endpos, 1, forward, start);
         times++;
-    } while(trace->entityNum < ENTITYNUM_MAX_NORMAL && trace->fraction < 1.0 && times < 10);
+    } while(g_entities[trace->entityNum].takedamage && trace->fraction < 1.0 && times < 10);
     
 }
     
