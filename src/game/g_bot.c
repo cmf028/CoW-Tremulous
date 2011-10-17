@@ -1472,13 +1472,20 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
         //now loop through the closestnodes and find the closest 2 nodes that are in LOS
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
-            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(startTarget), MASK_SHOT);
+            trap_Trace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(startTarget), MASK_DEADSOLID);
             if( trace.fraction == 1.0f && closestNodes[i] != -1 && n <= 2) {
                 closestNodes[n] = closestNodes[i];
                 n++;
             }
         }
             distance = -1;
+        if(n==2) {
+            //check that the 2 nodes can see each other, if they can't, we dont wanna take the risk, just use the closest node
+            trap_Trace(&trace, level.nodes[closestNodes[0]].coord, NULL, NULL, level.nodes[closestNodes[1]].coord, ENTITYNUM_NONE, MASK_DEADSOLID);
+            if(trace.fraction < 1.0f)
+                return closestNodes[0];
+        }
+        
         //now find which of the closest 2 nodes we see is closest to our end target
         for(i=0; i < n; i++) {
             if(DistanceSquared(end, level.nodes[closestNodes[i]].coord) < distance || distance == -1) {
