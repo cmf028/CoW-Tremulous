@@ -1443,8 +1443,8 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
         trace_t trace;
         int i,k,n = 0;
         long distance = 0;
-        long closestNodeDistances[5] = {-1,-1,-1,-1, -1};
-        int closestNodes[5] = {-1, -1, -1, -1, -1};
+        long closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
+        int closestNodes[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
         vec3_t start;
         vec3_t end;
         getTargetPos(startTarget, &start);
@@ -1452,10 +1452,10 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
         for(i = 0; i < level.numNodes; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have
-            for(k=0;k<5;k++) {
+            for(k=0;k<10;k++) {
                 if(distance < closestNodeDistances[k] || closestNodeDistances[k] == -1) {
                     //need to move the other elements up 1 index
-                    for(n=k;n<4;n++) {
+                    for(n=k;n<9;n++) {
                         closestNodeDistances[n+1] = closestNodeDistances[n];
                         closestNodes[n+1] = closestNodes[n];
                     }
@@ -1469,17 +1469,17 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
             }
         }
         n=0;
-        //now loop through the closestnodes and find the closest node that is in LOS
+        //now loop through the closestnodes and find the closest 2 nodes that are in LOS
         //note that they are sorted by distance in the array
-        for(i = 0; i < 5; i++) {
+        for(i = 0; i < 10; i++) {
             dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(startTarget), MASK_SHOT);
-            if( trace.fraction == 1.0f && closestNodes[i] != -1) {
+            if( trace.fraction == 1.0f && closestNodes[i] != -1 && n <= 2) {
                 closestNodes[n] = closestNodes[i];
                 n++;
             }
         }
             distance = -1;
-        //now find which of the nodes we see is closest to our end target
+        //now find which of the closest 2 nodes we see is closest to our end target
         for(i=0; i < n; i++) {
             if(DistanceSquared(end, level.nodes[closestNodes[i]].coord) < distance || distance == -1) {
                 closestNodes[0] = closestNodes[i];
