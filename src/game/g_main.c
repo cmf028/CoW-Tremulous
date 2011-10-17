@@ -851,6 +851,8 @@ void G_PathLoad( void )
         char *path;
         char line[ MAX_STRING_CHARS ];
         char map[ MAX_QPATH ];
+        trace_t trace;
+        vec3_t tempVec;
         level.numNodes = 0;
         trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
         for(i = 0; i < MAX_NODES;i++)
@@ -923,6 +925,17 @@ void G_PathLoad( void )
                         level.distNode[i][k] = 999999999; //make distance huge to make route finding algorithm not use it
                 }
             }
+        }
+        //Shift all nodes down so that they "sit" on the solid surface instead of floating in mid air above it
+        for(i=0; i < level.numNodes; i ++) {
+            VectorCopy(level.nodes[i].coord, tempVec);
+            tempVec[2] -= 38; //largest abs(mins[2]) value of all classes (bsuit value)
+            trap_Trace(&trace, level.nodes[i].coord, NULL, NULL, tempVec, ENTITYNUM_NONE, MASK_DEADSOLID);
+            
+            //if we hit something (ground) copy the end position to the position of the node
+            if(trace.fraction < 1.0f)
+                VectorCopy(trace.endpos, level.nodes[i].coord);
+            
         }
         G_Printf( va("Loaded %d nodes\n", level.numNodes) );
 }

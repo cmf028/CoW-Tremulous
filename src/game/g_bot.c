@@ -1248,13 +1248,9 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
         }
     } else { 
         //get rid of 'bobing' motion when aiming at waypoints by making the aimlocation the same height above ground as our viewheight
+        //NOTE: the waypoints are about on ground level due to code in g_main.c so we just need to add mins height and viewheight
         BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], mins, NULL, NULL, NULL, NULL);
-        VectorCopy(*aimLocation,end);
-        end[2] -= 1000;
-        trap_Trace(&trace, (*aimLocation), NULL,NULL,end,ENTITYNUM_NONE, MASK_SHOT);
-        VectorCopy(trace.endpos,end);
-        end[2] -= mins[2];
-        (*aimLocation)[2] = end[2] + self->client->ps.viewheight;
+        (*aimLocation)[2] += -mins[2] + self->client->ps.viewheight;
     }
 }
 
