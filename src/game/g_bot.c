@@ -1437,22 +1437,25 @@ void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         
         VectorAdd(viewBase, skilledVec, *rVec);
 }
-
-int findClosestNode( botTarget_t target ) {
+//finds the closest node to the start, but also takes into account position of end when choosing closest
+//chooses best match
+int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
         trace_t trace;
         int i,k,n = 0;
-        float distance = 0;
-        float closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
-        int closestNodes[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+        long distance = 0;
+        long closestNodeDistances[5] = {-1,-1,-1,-1, -1};
+        int closestNodes[5] = {-1, -1, -1, -1, -1};
         vec3_t start;
-        getTargetPos(target, &start);
+        vec3_t end;
+        getTargetPos(startTarget, &start);
+        getTargetPos(endTarget, &end);
         for(i = 0; i < level.numNodes; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have
-            for(k=0;k<10;k++) {
+            for(k=0;k<5;k++) {
                 if(distance < closestNodeDistances[k] || closestNodeDistances[k] == -1) {
                     //need to move the other elements up 1 index
-                    for(n=k;n<9;n++) {
+                    for(n=k;n<4;n++) {
                         closestNodeDistances[n+1] = closestNodeDistances[n];
                         closestNodes[n+1] = closestNodes[n];
                     }
@@ -1465,15 +1468,26 @@ int findClosestNode( botTarget_t target ) {
                 }
             }
         }
+        n=0;
         //now loop through the closestnodes and find the closest node that is in LOS
         //note that they are sorted by distance in the array
-        for(i = 0; i < 10; i++) {
-            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(target), MASK_SHOT);
+        for(i = 0; i < 5; i++) {
+            dynamicTrace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(startTarget), MASK_SHOT);
             if( trace.fraction == 1.0f && closestNodes[i] != -1) {
-                return closestNodes[i];
+                closestNodes[n] = closestNodes[i];
+                n++;
             }
         }
-        //no closest nodes are in LOS, pick the closest node regardless of LOS
+            distance = -1;
+        //now find which of the nodes we see is closest to our end target
+        for(i=0; i < n; i++) {
+            if(DistanceSquared(end, level.nodes[closestNodes[i]].coord) < distance || distance == -1) {
+                closestNodes[0] = closestNodes[i];
+                distance = DistanceSquared(end, level.nodes[closestNodes[i]].coord);
+            }
+        }
+        //return the closest nodes that start can see, and closest to the end 
+        //NOTE: if none of the nodes could be seen from the start point, it will return the closest node to the startpoint regardless
         return closestNodes[0];
 }
 
@@ -1543,8 +1557,8 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         self->botMind->routeToTarget[i] = -1;
         visited[i] = 0;
     }
-    startNum = findClosestNode(bot);
-    endNum = findClosestNode(target);
+    startNum = findClosestNode(bot, target);
+    endNum = findClosestNode(target, bot);
     
     //no closestnode
     if(startNum == -1 || endNum == -1)
@@ -1583,15 +1597,15 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
         
         //can we see the second node?
-        dynamicTrace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
+        //dynamicTrace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
         
         //check if we are blocked from getting there
-        dynamicTrace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
+        //dynamicTrace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
         
         //we can see the second node and are not blocked? then start with that node
-        if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
-            self->botMind->startNodeID = self->botMind->routeToTarget[startNum];
-        else //nope, start with the first node
+        //if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
+            //self->botMind->startNodeID = self->botMind->routeToTarget[startNum];
+        //else //nope, start with the first node
             self->botMind->startNodeID = startNum;
 }
 void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
@@ -1599,7 +1613,7 @@ void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     int i;
     int closestNode;
     setTargetEntity(&target, self);
-    closestNode = findClosestNode(target);
+    closestNode = findClosestNode(target,target);
     for(i=0;i<5;i++) {
         self->botMind->visited[i] = -1;
     }

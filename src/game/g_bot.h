@@ -58,7 +58,7 @@ int botFindDamagedFriendlyStructure( gentity_t *self );
 int botFindClosestEnemy( gentity_t *self, qboolean includeTeam );
 int botFindBuilding(gentity_t *self, int buildingType, int range);
 
-int findClosestNode( botTarget_t target );
+int findClosestNode( botTarget_t startTarget, botTarget_t endTarget);
 void findNewNode(gentity_t *self, usercmd_t *botCmdBuffer);
 void findNextNode(gentity_t *self);
 qboolean haveVisited( gentity_t *self, int id);
