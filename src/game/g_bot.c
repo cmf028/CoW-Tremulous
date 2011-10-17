@@ -157,6 +157,8 @@ qboolean botShouldJump(gentity_t *self) {
     BG_FindBBoxForClass( selfClass, mins, maxs, NULL, NULL, NULL );
     AngleVectors( self->client->ps.viewangles, forward, right, NULL);
     forward[2] = 0.0f;
+    right[2] = 0.0f;
+    VectorNormalize(right);
     VectorNormalize(forward);
     
     VectorMA(self->s.origin, maxs[0], forward, start);
@@ -175,7 +177,7 @@ qboolean botShouldJump(gentity_t *self) {
     trap_Trace(&traceLeftLow, startLeft, halfMins, halfMaxs, endLeft, self->s.number, MASK_SHOT);
     
     startLeft[2] += jumpHeight;
-    endRight[2] += jumpHeight;
+    startRight[2] += jumpHeight;
     endLeft[2] += jumpHeight;
     endRight[2] += jumpHeight;
     trap_Trace( &traceLeftHigh, startLeft, halfMins, halfMaxs, endLeft, self->s.number, MASK_SHOT );
@@ -222,36 +224,53 @@ int getStrafeDirection(gentity_t *self) {
         strafe = 127;
     } else if( traceRight.fraction != 1.0f && traceLeft.fraction == 1.0f ) {
         strafe = -127;
+    } else {
+        if(self->client->time10000 % 5000 > 2500)
+            strafe = 127;
+        else
+            strafe = -127;
     }
     return strafe;
 }
 qboolean botPathIsBlocked(gentity_t *self) {
-    vec3_t forward, right, up;
+    vec3_t forward,forwardDerived1, forwardDerived2,right,up;
     vec3_t start, end;
     vec3_t mins, maxs;
     trace_t trace;
     gentity_t *traceEnt;
     int blockerTeam;
+    int stepHeight = 18;
     
     if( !self->client )
         return qfalse;
     
     BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ], mins, maxs, NULL, NULL, NULL );
     
-    //forward vector is not necessarily pointing the direction we are moving so derive it from the right vector and the normal of the plane we are on
-    AngleVectors( self->client->ps.viewangles, NULL, right, NULL);
-    right[ 2 ] = 0.0f; //make vector 2D by getting rid of z component
-    VectorNormalize(right);
-    VectorCopy(self->client->ps.grapplePoint,up);
-    VectorNormalize(up);
-    CrossProduct(up, right, forward);
-    VectorNormalize(forward);
     
+    AngleVectors( self->client->ps.viewangles, forward, right, NULL);
+    VectorCopy(self->client->ps.origin, end);
+    end[2] += mins[2] - 20;
+        trap_Trace(&trace, self->client->ps.origin, NULL, NULL, end, self->s.number,MASK_SHOT);
+        //forward vector is the direction we are aiming, NOT the direction we are moving, so derive it from the right vector and the normal of the plane we are on
+        VectorCopy(trace.plane.normal, up);
+        right[2]=0.0f;
+        VectorNormalize(right);
+        VectorNormalize(up);
+        CrossProduct(up, right, forwardDerived1);
+        VectorNormalize(forwardDerived1);
+        CrossProduct(up, right, forwardDerived2);
+        VectorNormalize(forwardDerived2);
+        //choose the one closest to the forward vector according to our view
+        if(Q_fabs(acos(DotProduct(forward,forwardDerived1))) < Q_fabs(acos(DotProduct(forward, forwardDerived2))))
+            VectorCopy(forwardDerived1, forward);
+        else
+            VectorCopy(forwardDerived2, forward);
     //scaling the vector
     VectorMA( self->client->ps.origin, maxs[0], forward, start );
+    start[2]+=stepHeight;
     VectorMA(start, 30, forward,end);
     
-    trap_Trace( &trace, self->client->ps.origin, mins, maxs, end, self->client->ps.clientNum, MASK_PLAYERSOLID );
+    trap_Trace( &trace, self->client->ps.origin, mins, maxs, end, self->s.number, MASK_SHOT );
     traceEnt = &g_entities[trace.entityNum];
     if(traceEnt) {
         if(traceEnt->s.eType == ET_BUILDABLE)
@@ -331,7 +350,7 @@ void G_BotModusManager( gentity_t *self ) {
     int armouryIndex = botFindBuilding(self, BA_H_ARMOURY, BOT_ARM_RANGE);
     
     //search for a new enemy every so often
-   if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0) 
+   if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0)
         enemyIndex = botFindClosestEnemy(self, qfalse);
     
     //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
