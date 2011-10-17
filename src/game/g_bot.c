@@ -258,7 +258,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
         VectorNormalize(up);
         CrossProduct(up, right, forwardDerived1);
         VectorNormalize(forwardDerived1);
-        CrossProduct(up, right, forwardDerived2);
+        CrossProduct(right, up, forwardDerived2);
         VectorNormalize(forwardDerived2);
         //choose the one closest to the forward vector according to our view
         if(Q_fabs(acos(DotProduct(forward,forwardDerived1))) < Q_fabs(acos(DotProduct(forward, forwardDerived2))))
