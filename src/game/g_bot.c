@@ -42,7 +42,6 @@ void G_BotAdd( char *name, int team, int skill ) {
     char userinfo[MAX_INFO_STRING];
     int reservedSlots = 0;
     gentity_t *bot;
-    //char buffer [33];
     reservedSlots = trap_Cvar_VariableIntegerValue( "sv_privateclients" );
 
     // find what clientNum to use for bot
@@ -157,12 +156,9 @@ qboolean botShouldJump(gentity_t *self) {
     BG_FindBBoxForClass( selfClass, mins, maxs, NULL, NULL, NULL );
     AngleVectors( self->client->ps.viewangles, forward, right, NULL);
     forward[2] = 0.0f;
-    right[2] = 0.0f;
-    VectorNormalize(right);
     VectorNormalize(forward);
     
     VectorMA(self->s.origin, maxs[0], forward, start);
-    //start[2] += mins[2];//mins[2] should be negative
     start[2] += stepSize;
     VectorScale(right, maxs[1]/2,right);
     VectorAdd(start, right, startRight);
@@ -253,13 +249,13 @@ qboolean botPathIsBlocked(gentity_t *self) {
         trap_Trace(&trace, self->client->ps.origin, NULL, NULL, end, self->s.number,MASK_SHOT);
         //forward vector is the direction we are aiming, NOT the direction we are moving, so derive it from the right vector and the normal of the plane we are on
         VectorCopy(trace.plane.normal, up);
-        right[2]=0.0f;
-        VectorNormalize(right);
-        VectorNormalize(up);
+        
+        //cross product can return 2 different vectors depending on the order of the arguments
+        //these vectors are simply pointing the opposite directions, so we just need to invert one of them to get the second one
         CrossProduct(up, right, forwardDerived1);
         VectorNormalize(forwardDerived1);
-        CrossProduct(right, up, forwardDerived2);
-        VectorNormalize(forwardDerived2);
+        VectorCopy(forwardDerived1,forwardDerived2);
+        VectorInverse(forwardDerived2);
         //choose the one closest to the forward vector according to our view
         if(Q_fabs(acos(DotProduct(forward,forwardDerived1))) < Q_fabs(acos(DotProduct(forward, forwardDerived2))))
             VectorCopy(forwardDerived1, forward);
@@ -1092,9 +1088,8 @@ void setTargetCoordinate(botTarget_t *target, vec3_t goal ) {
 }
 
 int botFindBuilding(gentity_t *self, int buildingType, int range) {
-    // The range of our scanning field.
-    //int vectorRange = MGTURRET_RANGE * 5;
-    // vectorRange converted to a vector
+
+    // range converted to a vector
     vec3_t vectorRange;
     // Lower bound vector
     vec3_t mins;
@@ -1250,7 +1245,6 @@ void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation)
     vec3_t mins;
     //get the position of the enemy
     getTargetPos(target, aimLocation);
-    //gentity_t *targetEnt = &g_entities[getTargetEntityNumber(target)];
     
     
     if(getTargetType(target) != ET_BUILDABLE && targetIsEntity(target) && getTargetTeam(target) == PTE_HUMANS) {
@@ -1278,7 +1272,6 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
         //vec3_t highPoint;
         float turnAngle;
         int i;
-        vec3_t forward;
 
         if( ! (self && self->client) )
                 return;
@@ -1313,7 +1306,6 @@ void botAimAtLocation( gentity_t *self, vec3_t target, usercmd_t *rAngles)
                 aimAngles[i] = ANGLE2SHORT(aimAngles[i]);
         }
 
-        AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
         //save bandwidth
         SnapVector(aimAngles);
         rAngles->angles[0] = aimAngles[0];
@@ -1328,8 +1320,6 @@ void botShakeAim( gentity_t *self, vec3_t *rVec ){
     AngleVectors(self->client->ps.viewangles, forward, right, up);
     //seed crandom
     seed = (int) rand() & 255;
-    //Distance(self->s.origin, *rVec)/8192;
-    //int shakeMag = 8192 / self->botMind->botSkill.aimShake
     VectorSubtract(*rVec,self->s.origin, diffVec);
     length = (float) VectorLength(diffVec)/1000;
     VectorNormalize(diffVec);
@@ -1412,8 +1402,6 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
 
     if( trace.surfaceFlags & SURF_NOIMPACT )
         return qfalse;
-
-    //traceEnt = &g_entities[ trace.entityNum ];
         
     //target is in range
     if( (trace.entityNum == getTargetEntityNumber(target) || trace.fraction == 1.0f) && !trace.startsolid )
@@ -1568,11 +1556,9 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     int bestNode;
     int childNode;
     short visited[MAX_NODES];
-    //make startNum -1 so if there is no node close to us, we will not use the path
     short startNum = -1;
     short endNum = -1;
     vec3_t start = {0,0,0}; 
-    //trace_t trace, trace2;
     botTarget_t bot;
     setTargetEntity(&bot, self);
     VectorCopy(self->s.pos.trBase,start);
@@ -1616,22 +1602,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         }
     }
         self->botMind->lastRouteSearch = level.time;
-        
-        //now we check to see if we can skip the first node
-        //we want to do this to avoid peculiar backtracking to the first node in the chain
-        //note that we already know that there are at least 2 nodes in the route because of the previous check that startNode != endNode
-        
-        //can we see the second node?
-        //dynamicTrace(&trace, start, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord, self->s.number, MASK_SHOT);
-        
-        //check if we are blocked from getting there
-        //dynamicTrace(&trace2, self->s.pos.trBase, NULL, NULL, level.nodes[self->botMind->routeToTarget[startNum]].coord,self->s.number, MASK_SHOT);
-        
-        //we can see the second node and are not blocked? then start with that node
-        //if(trace.fraction == 1.0f && trace2.fraction == 1.0f && !trace.startsolid && !trace2.startsolid)
-            //self->botMind->startNodeID = self->botMind->routeToTarget[startNum];
-        //else //nope, start with the first node
-            self->botMind->startNodeID = startNum;
+        self->botMind->startNodeID = startNum;
 }
 void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     botTarget_t target;
@@ -1687,8 +1658,6 @@ void findNextNode( gentity_t *self )
             srand( trap_Milliseconds( ) );
             randnum = rand() % possibleNextNode;
             nextNode = randnum;
-            //if(nextpath == possiblenextpath)
-            //{nextpath = possiblenextpath - 1;}
             }
             addVisited(self, self->botMind->targetNodeID);
             self->botMind->targetNodeID = possibleNodes[nextNode];
@@ -1729,20 +1698,5 @@ void setSkill(gentity_t *self, int skill) {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
         self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
-}
-//use this to trace through buildings and players AKA: dynamically placed objects
-//its not very efficient when there are multiple things to trace through in a row, but its the only option we have :(
-void dynamicTrace(trace_t *trace, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int skipNum, int mask) {
-    int times = 0;
-    vec3_t forward;
-    VectorSubtract(end,start, forward);
-    VectorNormalize(forward);
-    do {
-        trap_Trace(trace, start, mins, maxs, end, skipNum, mask);
-        skipNum = trace->entityNum;
-        VectorMA(trace->endpos, 1, forward, start);
-        times++;
-    } while(g_entities[trace->entityNum].takedamage && trace->fraction < 1.0 && times < 10);
-    
 }
     
