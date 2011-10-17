@@ -290,6 +290,8 @@ void G_BotThink( gentity_t *self) {
     //infinite funds cvar
     if(g_bot_infinite_funds.integer == 1)
         G_AddCreditToClient(self->client, HUMAN_MAX_CREDITS, qtrue);
+    //hacky ping fix
+    self->client->ps.ping = rand() % 50 + 50;
     
     G_BotModusManager(self);
     switch(self->botMind->currentModus) {
@@ -1125,6 +1127,8 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
     
 void G_BotSpectatorThink( gentity_t *self ) {
     int i;
+    //hacky ping fix
+    self->client->ps.ping = rand() % 50 + 50;
     if( self->client->ps.pm_flags & PMF_QUEUED) {
         //we're queued to spawn, all good
         //check for humans in the spawn que
