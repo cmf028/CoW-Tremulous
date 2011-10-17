@@ -1547,7 +1547,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     short startNum = -1;
     short endNum = -1;
     vec3_t start = {0,0,0}; 
-    trace_t trace, trace2;
+    //trace_t trace, trace2;
     botTarget_t bot;
     setTargetEntity(&bot, self);
     VectorCopy(self->s.pos.trBase,start);
