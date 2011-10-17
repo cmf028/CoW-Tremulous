@@ -1667,7 +1667,7 @@ void findNextNode( gentity_t *self )
         }
         else {
             srand( trap_Milliseconds( ) );
-            randnum = (int)(( (double)rand() / ((double)(RAND_MAX)+(double)(1)) ) * possibleNextNode);
+            randnum = rand() % possibleNextNode;
             nextNode = randnum;
             //if(nextpath == possiblenextpath)
             //{nextpath = possiblenextpath - 1;}
