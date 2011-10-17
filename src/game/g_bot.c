@@ -667,7 +667,7 @@ void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
         }
 }
 void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
-    int buildingIndex;
+    int buildingIndex = ENTITYNUM_NONE;
     qboolean teamRush;
     if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         buildingIndex = botFindBuilding(self, BA_A_OVERMIND, -1);
@@ -1458,15 +1458,16 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
             //check if new distance is shorter than one of the 4 we have
             for(k=0;k<10;k++) {
                 if(distance < closestNodeDistances[k] || closestNodeDistances[k] == -1) {
+                    
                     //need to move the other elements up 1 index
-                    for(n=k;n<9;n++) {
-                        closestNodeDistances[n+1] = closestNodeDistances[n];
-                        closestNodes[n+1] = closestNodes[n];
+                    //loop will not execute if k == 9
+                    for(n=9;n>k;n--) {
+                        closestNodeDistances[n] = closestNodeDistances[n - 1];
+                        closestNodes[n] = closestNodes[n - 1];
                     }
                     closestNodeDistances[k] = distance;
                     closestNodes[k] = i;
-                    //get out of inner loop
-                    k=10;
+                    k=10; //get out of inner loop
                 } else {
                     continue;
                 }
@@ -1485,7 +1486,7 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
             distance = -1;
         if(n==2) {
             //check that the 2 nodes can see each other, if they can't, we dont wanna take the risk, just use the closest node
-            trap_Trace(&trace, level.nodes[closestNodes[0]].coord, NULL, NULL, level.nodes[closestNodes[1]].coord, ENTITYNUM_NONE, MASK_DEADSOLID);
+            trap_Trace(&trace, level.nodes[closestNodes[0]].coord, NULL, NULL, level.nodes[closestNodes[1]].coord, getTargetEntityNumber(startTarget), MASK_DEADSOLID);
             if(trace.fraction < 1.0f)
                 return closestNodes[0];
         }
