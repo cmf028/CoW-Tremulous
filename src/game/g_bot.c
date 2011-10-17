@@ -854,11 +854,11 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             break;
         case WP_ALEVEL3:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 500; //An arbitrary value for pounce, has nothing to do with actual range
+            secondaryRange = 900; //An arbitrary value for pounce, has nothing to do with actual range
             break;
         case WP_ALEVEL3_UPG:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 500; //An arbitrary value for pounce and barbs, has nothing to do with actual range
+            secondaryRange = 900; //An arbitrary value for pounce and barbs, has nothing to do with actual range
             break;
         case WP_ALEVEL4:
             range = LEVEL4_CLAW_RANGE;
@@ -893,7 +893,6 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             secondaryRange = 0; //no secondary attack
     }
     getTargetPos(target, &targetPos);
-    botGetAimLocation(self, target, &targetPos);
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     distance = DistanceSquared(self->s.pos.trBase, targetPos);
     distance = (int) distance - myMax/2 - targetMax/2;
@@ -966,7 +965,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3:
                 if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->goal) - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                 } else
                     botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -974,13 +973,15 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
             case PCL_ALIEN_LEVEL3_UPG:
                 if(self->client->ps.ammo[WP_ALEVEL3_UPG] > 0 && 
                     distance > Square(2 * LEVEL3_CLAW_RANGE) && getTargetType(self->botMind->goal) == ET_BUILDABLE) {
-                    botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH]; //look up a bit more
+                    botCmdBuffer->angles[PITCH] -= calcBarbAimDelta(self, self->botMind->goal) - self->client->ps.delta_angles[PITCH]; //look up a bit more
                     botCmdBuffer->buttons |= BUTTON_USE_HOLDABLE; //barb
                     botCmdBuffer->forwardmove = 0; //dont move while sniping
+                    botCmdBuffer->rightmove = 0;
+                    botCmdBuffer->upmove = 0;
                 } else {       
                     if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-                        botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];; //look up a bit more
+                        botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->goal) - self->client->ps.delta_angles[PITCH];; //look up a bit more
                         botCmdBuffer->buttons |= BUTTON_ATTACK2; //pounce
                     }else
                         botCmdBuffer->buttons |= BUTTON_ATTACK;
@@ -1111,7 +1112,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
         for( i = 0; i < total_entities; ++i ) {
             target = &g_entities[entityList[ i ] ];
             
-            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered)) {
+            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered) && target->health > 0) {
                 newDistance = DistanceSquared( self->s.pos.trBase, target->s.pos.trBase );
                 if( newDistance < minDistance|| minDistance == -1) {
                     minDistance = newDistance;
@@ -1121,10 +1122,10 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
             
         }
     } else {
-        for( i = 0; i < MAX_GENTITIES; ++i ) {
+        for( i = 0; i < level.num_entities; ++i ) {
             target = &g_entities[i];
             
-            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered)) {
+            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered) && target->health > 0) {
                 newDistance = DistanceSquared(self->s.pos.trBase,target->s.pos.trBase);
                 if( newDistance < minDistance|| minDistance == -1) {
                     minDistance = newDistance;
@@ -1507,7 +1508,7 @@ int findClosestNode( botTarget_t startTarget, botTarget_t endTarget) {
 
 void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t targetPos;
-    getTargetPos(self->botMind->goal,&targetPos);
+    getTargetPos(self->botMind->targetNode,&targetPos);
     switch(level.nodes[self->botMind->visited[4]].action)
     {
         case BOT_JUMP:  
@@ -1531,11 +1532,11 @@ void doLastNodeAction(gentity_t *self, usercmd_t *botCmdBuffer) {
         break;
         case BOT_POUNCE:if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3 && 
             self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
-            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->targetNode) - self->client->ps.delta_angles[PITCH];
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
             }else if(self->client->ps.stats[STAT_PCLASS] == PCL_ALIEN_LEVEL3_UPG && 
                 self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
-            botCmdBuffer->angles[PITCH] -= Distance(self->s.pos.trBase,targetPos) * 5 - self->client->ps.delta_angles[PITCH];
+            botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->targetNode) - self->client->ps.delta_angles[PITCH];
             botCmdBuffer->buttons |= BUTTON_ATTACK2;
                 }
                 break;
@@ -1574,7 +1575,6 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     //no closestnode
     if(startNum == -1 || endNum == -1)
         return;
-    
     shortDist[endNum] = 0;
     //NOTE: the algorithm has been reversed so we dont have to go through the final route and reverse it before we use it
     //Dijkstra's Algorithm
@@ -1603,6 +1603,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
     }
         self->botMind->lastRouteSearch = level.time;
         self->botMind->startNodeID = startNum;
+        self->botMind->endNodeID = endNum;
 }
 void findNewNode( gentity_t *self, usercmd_t *botCmdBuffer) {
     botTarget_t target;
@@ -1698,5 +1699,23 @@ void setSkill(gentity_t *self, int skill) {
         self->botMind->botSkill.aimSlowness = (float) skill / 40;
         self->botMind->botSkill.aimShake = (int) (10 - skill);
     }
+}
+float calcPounceAimDelta(gentity_t *self, botTarget_t target) {
+    vec3_t startPos;
+    vec3_t targetPos;
+    getTargetPos(target, &targetPos);
+    VectorCopy(self->s.pos.trBase, startPos);
+    targetPos[2] = 0.0f;
+    startPos[2] = 0.0f;
+    return Distance(startPos, targetPos) * 5;
+}
+float calcBarbAimDelta(gentity_t *self, botTarget_t target) {
+    vec3_t startPos;
+    vec3_t targetPos;
+    getTargetPos(target, &targetPos);
+    VectorCopy(self->s.pos.trBase, startPos);
+    targetPos[2] = 0.0f;
+    startPos[2] = 0.0f;
+    return Distance(startPos, targetPos) * 3;
 }
     

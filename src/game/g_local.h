@@ -152,6 +152,7 @@ typedef struct
     botTarget_t           goal;
     int routeToTarget[MAX_NODES];
     int startNodeID;
+    int endNodeID;
     int lastRouteSearch;
     botSkill_t botSkill;
     botModus_t currentModus;

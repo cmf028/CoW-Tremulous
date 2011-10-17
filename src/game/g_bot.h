@@ -80,6 +80,8 @@ qboolean botNeedsItem(gentity_t *self);
 qboolean botCanShop(gentity_t *self);
 qboolean botStructureIsDamaged(int team);
 int G_BotBuyWeapon(gentity_t *ent, int weapon);
+float calcPounceAimDelta(gentity_t *self, botTarget_t target);
+float calcBarbAimDelta(gentity_t *self, botTarget_t target);
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
 
