@@ -1412,7 +1412,12 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
 
 //Begin node/waypoint/path functions
 int distanceToTargetNode( gentity_t *self ) {
-        return (int) Distance(level.nodes[self->botMind->targetNodeID].coord, self->s.pos.trBase);
+        vec3_t mins;
+        vec3_t pos;
+        BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS],mins, NULL, NULL, NULL, NULL);
+        VectorCopy(self->s.pos.trBase, pos);
+        pos[2] += mins[2]; //mins should be negative
+        return (int) Distance(level.nodes[self->botMind->targetNodeID].coord, pos);
 }
 void botSlowAim( gentity_t *self, vec3_t target, float slow, vec3_t *rVec) {
         vec3_t viewBase;
