@@ -7355,7 +7355,7 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
                 target->damage = 0;
                 target->splashDamage = 0;
                 target->splashRadius = 0;
-                target->s.weapon = WP_PULSE_RIFLE;
+                target->s.weapon = WP_GRENADE;
                 target->s.generic1 = WPM_PRIMARY;
                 target->s.pos.trType = TR_LINEAR;
                 target->s.pos.trTime = level.time;
@@ -7388,7 +7388,7 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
         target->splashRadius = 0;
         target->s.weapon = WP_PULSE_RIFLE;
         target->s.generic1 = WPM_PRIMARY;
-        target->s.pos.trType = TR_LINEAR;
+        target->s.pos.trType = TR_STATIONARY;
         target->s.pos.trTime = level.time;
         target->parent = ent;
         target->r.ownerNum = ent->s.number;

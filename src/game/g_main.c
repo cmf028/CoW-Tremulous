@@ -927,6 +927,7 @@ void G_PathLoad( void )
             }
         }
         //Shift all nodes down so that they "sit" on the solid surface instead of floating in mid air above it
+        //We do this so that the bots wont try to get to a node that is too high
         for(i=0; i < level.numNodes; i ++) {
             VectorCopy(level.nodes[i].coord, tempVec);
             tempVec[2] -= 38; //largest abs(mins[2]) value of all classes (bsuit value)

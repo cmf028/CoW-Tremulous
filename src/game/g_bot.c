@@ -1228,8 +1228,6 @@ void G_BotIntermissionThink( gclient_t *client )
     client->readyToExit = qtrue;
 }
 void botGetAimLocation(gentity_t *self, botTarget_t target, vec3_t *aimLocation) {
-    trace_t trace;
-    vec3_t end;
     vec3_t mins;
     //get the position of the enemy
     getTargetPos(target, aimLocation);
