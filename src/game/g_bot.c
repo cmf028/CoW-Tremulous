@@ -283,6 +283,29 @@ qboolean botPathIsBlocked(gentity_t *self) {
     else
         return qtrue;
 }
+//copy of PM_CheckLadder in bg_pmove.c
+qboolean botOnLadder( gentity_t *self )
+{
+    vec3_t forward, end;
+    vec3_t mins, maxs;
+    trace_t trace;
+    
+    if( !BG_ClassHasAbility( self->client->ps.stats[ STAT_PCLASS ], SCA_CANUSELADDERS ) )
+        return qfalse;
+    
+    AngleVectors( self->client->ps.viewangles, forward, NULL, NULL);
+    
+    forward[ 2 ] = 0.0f;
+    BG_FindBBoxForClass( self->client->ps.stats[ STAT_PCLASS ], mins, maxs, NULL, NULL, NULL );
+    VectorMA( self->s.origin, 1.0f, forward, end );
+    
+    trap_Trace( &trace, self->s.origin, mins, maxs, end, self->s.number, MASK_PLAYERSOLID );
+    
+    if( trace.fraction < 1.0f && trace.surfaceFlags & SURF_LADDER )
+        return qtrue;
+    else
+        return qfalse;
+}
 /**G_BotThink
  * Does Misc bot actions
  * Calls G_BotModusManager to decide which Modus the bot should be in
@@ -481,7 +504,7 @@ void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
 void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     
     vec3_t tmpVec;
-    
+    vec3_t forward;
     //aim at the destination
     botGetAimLocation(self, target, &tmpVec);
     
@@ -517,11 +540,21 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     
     //we have stopped moving forward, try to get around whatever is blocking us
     if( botPathIsBlocked(self)) {
+        //handle ladders
+        if(botOnLadder(self)) {
+            AngleVectors(self->client->ps.viewangles, forward, NULL, NULL);
+            forward[2] = 30;
+            //aim at ladder (well, just a bit above)
+            VectorCopy(self->s.origin, tmpVec);
+            tmpVec[2] += self->client->ps.viewheight;
+            VectorAdd(tmpVec,forward, tmpVec);
+            botAimAtLocation(self, tmpVec, botCmdBuffer);
+        } else {
+            if(botShouldJump(self))
+                botCmdBuffer->upmove = 127;
         
-        if(botShouldJump(self))
-            botCmdBuffer->upmove = 127;
-        
-        botCmdBuffer->rightmove = getStrafeDirection(self);
+            botCmdBuffer->rightmove = getStrafeDirection(self);
+        }
             
     }
     
@@ -1410,7 +1443,6 @@ qboolean botTargetInRange( gentity_t *self, botTarget_t target, int mask ) {
     return qfalse;
 }
 
-//Begin node/waypoint/path functions
 int distanceToTargetNode( gentity_t *self ) {
         vec3_t mins;
         vec3_t pos;
