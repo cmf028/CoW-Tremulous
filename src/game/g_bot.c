@@ -550,10 +550,11 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
             VectorAdd(tmpVec,forward, tmpVec);
             botAimAtLocation(self, tmpVec, botCmdBuffer);
         } else {
-            if(botShouldJump(self))
+            if(botShouldJump(self)) {
                 botCmdBuffer->upmove = 127;
-        
-            botCmdBuffer->rightmove = getStrafeDirection(self);
+            } else {
+                botCmdBuffer->rightmove = getStrafeDirection(self);
+            }
         }
             
     }
