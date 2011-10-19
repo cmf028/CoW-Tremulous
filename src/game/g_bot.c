@@ -1489,8 +1489,14 @@ int findClosestNode( botTarget_t startTarget) {
         long distance = 0;
         long closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
         int closestNodes[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+        int temp;
+        long temp2;
         vec3_t start;
         getTargetPos(startTarget, &start);
+        //move viewpoint to ground (used for trace)
+        if(targetIsEntity(startTarget)) {
+            start[2] += startTarget.ent->r.mins[2];
+        }
         for(i = 0; i < level.numNodes; i++) {
             distance = DistanceSquared(start,level.nodes[i].coord);
             //check if new distance is shorter than one of the 4 we have

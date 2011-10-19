@@ -7424,11 +7424,13 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     int closestNode = -1;
     int minDistance = -1;
     int distance = -1;
-    int i,n,k;
+    int i,n,k,l;
     int timeout;
     int tempID;
     int len; //length of file when saving waypoints
     int maxConnectDist = 400; //the maximum distance the nodes can be apart to autoconnect them
+    long closestDist[10] = {-1,-1,-1,-1,-1};
+    int closestNodes[10];
     char *s;
     char command[MAX_STRING_CHARS];
     char argument[MAX_STRING_CHARS];
@@ -7674,12 +7676,33 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
         ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
     } else if(!Q_stricmp(command, "autoconnect")) {
         for(i=0;i<level.numNodes;i++) {
+            for(k=0;k<10;k++)
+                closestDist[k] = -1;
             for(n=0;n<level.numNodes;n++) {
                 distance = Distance(level.nodes[i].coord, level.nodes[n].coord);
-                if(distance <= maxConnectDist && !nodeIsFull(i) && !nodeIsFull(n) && !nodesAreConnected(i,n) && i!=n) {
-                    trap_Trace(&trace, level.nodes[i].coord, NULL, NULL,level.nodes[n].coord, ENTITYNUM_NONE, MASK_DEADSOLID);
+                for(k=0;k<10;k++) {
+                    if(distance < closestDist[k] || closestDist[k] == -1) {
+                        
+                        //need to move the other elements up 1 index
+                        //loop will not execute if k == 9
+                        for(l=9;l>k;l--) {
+                            closestDist[l] = closestDist[l - 1];
+                            closestNodes[l] = closestNodes[l - 1];
+                        }
+                        closestDist[k] = distance;
+                        closestNodes[k] = n;
+                        k=10; //get out of inner loop
+                    } else {
+                        continue;
+                    }
+                }
+                
+            }
+            for(k=0;k<10;k++) {
+                if(closestDist[k] <= maxConnectDist && !nodeIsFull(i) && !nodeIsFull(closestNodes[k]) && !nodesAreConnected(i,closestNodes[k]) && i!=closestNodes[k] && closestDist[k] != -1) {
+                    trap_Trace(&trace, level.nodes[i].coord, NULL, NULL,level.nodes[closestNodes[k]].coord, ENTITYNUM_NONE, MASK_DEADSOLID);
                     if(trace.fraction == 1.0f) {
-                        connectNodes(i,n);
+                        connectNodes(i,closestNodes[k]);
                     }
                 }
             }
