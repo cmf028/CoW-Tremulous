@@ -204,6 +204,7 @@ qboolean G_admin_botcmd( gentity_t *ent, int skiparg );
 qboolean G_admin_botset( gentity_t *ent, int skiparg );
 qboolean G_admin_botcfg( gentity_t *ent, int skiparg );
 qboolean G_drawnodes(gentity_t *ent, int skiparg);
+qboolean G_admin_waypoint(gentity_t *ent, int skipArg);
 qboolean G_admin_time( gentity_t *ent, int skiparg );
 qboolean G_admin_setlevel( gentity_t *ent, int skiparg );
 qboolean G_admin_loadrotation(gentity_t *ent, int skiparg);

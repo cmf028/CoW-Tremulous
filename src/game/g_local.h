@@ -1539,9 +1539,6 @@ extern vmCvar_t g_bot_wave_interval;
 
 //</bot stuff>
 
-//path editing, modify bots paths
-extern vmCvar_t g_pathediting;
-
 // cicho-sza add-on:
 extern  vmCvar_t  g_DebugMsg;
 extern  vmCvar_t  g_lesson_NoVotes;

@@ -371,6 +371,11 @@ g_admin_cmd_t g_admin_cmds[ ] =
      "warn", G_admin_warn, "w",
       "Warn a player to cease or face admin intervention",
       "[^3name|slot#^7] [reason]"
+    },
+    {
+        "waypoint", G_admin_waypoint, "L",
+        "Modify the nodes used by bots",
+        "[add/del/connect/disconnect/move/action/cancel/timeout/save]"
     }
   };
 
@@ -7264,57 +7269,6 @@ qboolean G_admin_L1(gentity_t *ent, int skiparg ){
   trap_SendConsoleCommand( EXEC_APPEND,va( "!setlevel %d 1;", pids[ 0 ] ) );
   return qtrue;
 }
-/*qboolean G_drawnodes( gentity_t *ent, int skiparg )
-{
-  long i,i2;
-  qboolean draw;
-  if(g_pathediting.integer == 1) {
-    if( level.drawpath == qfalse )
-    {
-        ADMP( "^2Drawing Paths\n" );
-        for( i = 0; i < level.numNodes; i++ )
-        {
-        draw = qtrue;
-        for( i2 = 0; i2 < 5; i2++ )
-        {
-            if( level.nodes[i].nextid[i2] < 0 )
-            {
-            draw = qfalse;
-            }
-        }
-        if( draw == qtrue )
-        {
-            gentity_t *node;
-            node = spawnnode( ent, i );
-        }
-        }
-        level.drawpath = qtrue;
-        return qtrue;
-    }
-    else
-    {
-        for( i = 0; i < MAX_GENTITIES; i++ )
-        {
-        if( g_entities[i].client )
-        {
-            continue;
-        }
-        if( !strcmp( "PathNode", g_entities[i].classname ) )
-        {
-            G_FreeEntity( &g_entities[i] );
-        }
-        }
-        ADMP( "^1Hiding Paths\n" );
-        level.drawpath = qfalse;
-        return qtrue;
-    }
-  } else {
-      ADMP( "^3!drawnodes: ^7Path editing is not enabled\n");
-      return qfalse;
-  }
-}*/
-extern void G_ExplodeMissile( gentity_t *ent );
-//FIXME: this is an aweful hack, pls turn it into a shader
 qboolean DrawNodes( gentity_t *ent, qboolean clear )
 {
     int i, i2;
@@ -7322,11 +7276,6 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
     gentity_t *target;
     qboolean delpath = qfalse;
     vec3_t move;
-    //long connections[level.numNodes][level.numNodes];
-    /*for(i=0;i<level.numNodes;i++) {
-        for(i2=0;i<level.numNodes;i2++)
-            connections[i][i2] = -1;
-    }*/
     if (clear == qtrue)
     {
         for ( i = 0; i < MAX_GENTITIES; i++ )
@@ -7335,7 +7284,7 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
             if ( !Q_stricmp("PathNode", target->classname ))
             {
                 found = qtrue;
-                G_ExplodeMissile( target );
+                G_FreeEntity( target );
             }
         }
         if (found == qtrue) { ADMP( "^7Hiding Nodes.\n" );return qtrue; }
@@ -7345,7 +7294,7 @@ qboolean DrawNodes( gentity_t *ent, qboolean clear )
     {
         for (i2 = 0; i2 < 5; i2++)
         {
-            if (level.nodes[i].nextid[i2] < 0) { delpath = qtrue; break; }
+            
             if(level.nodes[i].nextid[i2] != -1 && level.nodes[i].nextid[i2] < 1000 && i > level.nodes[i].nextid[i2]) {
                 target = G_Spawn();
                 target->classname = "PathNode";
@@ -7408,43 +7357,363 @@ void nodethink( gentity_t *ent )
   ent->s.pos.trTime = level.time;
   ent->nextthink = level.time + Distance(level.nodes[ent->pathid].coord, level.nodes[ent->movepathid].coord)/PRIFLE_SPEED * 1000;
 }
-
-gentity_t *spawnnode( gentity_t *self, long id )
-{
-  vec3_t temp;
-  vec3_t start;
-  gentity_t *bolt;
-  start[0] = level.nodes[id].coord[0];
-  start[1] = level.nodes[id].coord[1];
-  start[2] = level.nodes[id].coord[2];
-  temp[0] = 0;temp[1] = 0;temp[2] = 0;
-  //VectorNormalize (temp);
-
-  bolt = G_Spawn();
-  bolt->classname = "PathNode";
-  bolt->nextthink = level.time + 2000;
-  bolt->think = nodethink;
-  bolt->s.eType = ET_MISSILE;
-  bolt->r.svFlags = SVF_USE_CURRENT_ORIGIN;
-  bolt->s.weapon = WP_PULSE_RIFLE;
-  bolt->s.generic1 = WPM_PRIMARY; //weaponMode
-  bolt->r.ownerNum = self->r.ownerNum;
-  bolt->parent = self;
-  bolt->damage = 0;
-  bolt->splashDamage = 0;
-  bolt->splashRadius = 0;
-  bolt->methodOfDeath = MOD_GRENADE;
-  bolt->splashMethodOfDeath = MOD_GRENADE;
-  bolt->clipmask = 0;//MASK_SHOT; 
-  bolt->target_ent = NULL;
-  bolt->pathid = id;
-  bolt->s.pos.trType = TR_LINEAR;
-  bolt->s.pos.trTime = level.time - 50;   // move a bit on the very first frame
-  VectorCopy( start, bolt->s.pos.trBase );
-  VectorScale( temp, 0, bolt->s.pos.trDelta );
-  SnapVector( bolt->s.pos.trDelta );      // save net bandwidth
-
-  VectorCopy( start, bolt->r.currentOrigin );
-
-  return bolt;
+void createNewNode(vec3_t pos) {
+    int i;
+    for(i=0;i< MAX_PATH_NODES;i++) {
+        level.nodes[level.numNodes].nextid[i] = -1;
+    }
+    level.nodes[level.numNodes].timeout = 10000;
+    level.nodes[level.numNodes].action = 0;
+    level.nodes[level.numNodes].random = 0;
+    VectorCopy(pos, level.nodes[level.numNodes].coord);
+    level.numNodes++;
+}
+qboolean nodeIsFull(int nodeID) {
+    int i;
+    int numConnections = 0;
+    
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[nodeID].nextid[i] != -1) 
+            numConnections++;
+    }
+    if(numConnections == MAX_PATH_NODES)
+        return qtrue;
+    else
+        return qfalse;
+}
+qboolean nodesAreConnected(int node1, int node2) {
+    int i;
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[node1].nextid[i] == node2 || level.nodes[node2].nextid[i] == node1)
+            return qtrue;
+    }
+    return qfalse;
+}
+void connectNodes(int node1, int node2) {
+    int i;
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[node1].nextid[i] == -1) {
+            level.nodes[node1].nextid[i] = node2;
+            break;
+        }
+    }
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[node2].nextid[i] == -1) {
+            level.nodes[node2].nextid[i] = node1;
+            break;
+        }
+    }
+}
+void disconnectNodes(int node1, int node2) {
+    int i;
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[node1].nextid[i] == node2) {
+            level.nodes[node1].nextid[i] = -1;
+            break;
+        }
+    }
+    for(i=0;i<MAX_PATH_NODES;i++) {
+        if(level.nodes[node2].nextid[i] == node1) {
+            level.nodes[node2].nextid[i] = -1;
+            break;
+        }
+    }
+}
+qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
+    qboolean nodeNearby = qfalse;
+    int closestNode = -1;
+    int minDistance = -1;
+    int distance = -1;
+    int i,n,k;
+    int timeout;
+    int tempID;
+    int len; //length of file when saving waypoints
+    char *s;
+    char command[MAX_STRING_CHARS];
+    char argument[MAX_STRING_CHARS];
+    char map[MAX_QPATH];
+    char fileName[ MAX_OSPATH ];
+    fileHandle_t f;
+    node temp;
+    vec3_t playerPos;
+    vec3_t tempVec;
+    trace_t trace;
+    //get the map name for saving
+    trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
+    if(!ent) {
+        ADMP("console cannot use !waypoint\n");
+        return qfalse;
+    }
+        
+    
+    G_SayArgv(1 + skipArg, command, sizeof(command));
+    
+    VectorCopy(ent->client->ps.origin, playerPos);
+    playerPos[2] += ent->r.mins[2];
+    //find the closest node
+    for(i=0;i<level.numNodes;i++) {
+        distance = (int) Distance(playerPos, level.nodes[i].coord);
+        if(distance < minDistance || minDistance == -1) {
+            minDistance = distance;
+            closestNode = i;
+        }
+    }
+    if(minDistance <= 70 && minDistance != -1)
+        nodeNearby = qtrue;
+    if(!Q_stricmp(command, "add")) {
+        if(nodeNearby) {
+            ADMP("Too close to another node\n");
+            return qfalse;
+        }
+        if(level.numNodes < MAX_NODES) {
+            createNewNode(playerPos);
+            ADMP(va("Created new node: #%d\n",level.numNodes - 1));
+        } else {
+            ADMP("Maximum number of nodes reached\n");
+        }
+        
+    } else if(!Q_stricmp(command, "del")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        ADMP(va("Node %d deleted\n",closestNode));
+        
+        //cleanup node connections
+        for(i=0;i<level.numNodes;i++) {
+            for(n=0;n<MAX_PATH_NODES;n++) {
+                //the is is the same as the one we are deleting so assign -1
+                if(level.nodes[i].nextid[n] == closestNode) {
+                    level.nodes[i].nextid[n] = -1;
+                    //swap indexes so that the deleted one is in the back
+                    for(k=n;k<MAX_PATH_NODES - 1;k++) {
+                        tempID = level.nodes[i].nextid[k];
+                        level.nodes[i].nextid[k] = level.nodes[i].nextid[k+1];
+                        level.nodes[i].nextid[k+1] = tempID;
+                    }
+                }
+            }
+            //using seperate loop for this part since it cant go in above loop because of the swapping going on
+            //if it was in above loop, we would inevitably miss some
+            for(n=0;n<MAX_PATH_NODES;n++) {
+                //the id is > the id of the node we are deleteing so decrement it by 1 because we will decrement all node indexes > closestNode next
+                if(level.nodes[i].nextid[n] > closestNode)
+                    level.nodes[i].nextid[n]--;
+            }
+        }
+        //decrement node indexes > closestNode by 1
+        //moving the closestNode to the back in the process
+        for(i=closestNode; i < level.numNodes - 1; i++) {
+            temp = level.nodes[i+1];
+            level.nodes[i+1] = level.nodes[i];
+            level.nodes[i] = temp;
+        }
+        //finally, decrement level.numNodes to make us not save the deleted node
+        level.numNodes--;
+    } else if(!Q_stricmp(command, "connect")) {
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        if(ent->pathid == -1) {
+            ADMP(va("Node %d selected for connecting\n",closestNode));
+            ent->pathid = closestNode;
+        } else if(ent->pathid == closestNode) {
+            ADMP(va("Node %d deselected\n",ent->pathid));
+            ent->pathid = -1;
+        } else if(nodeIsFull(ent->pathid)) {
+            ADMP(va("Node %d is full\n", ent->pathid));
+            ent->pathid = -1;
+            return qfalse;
+        } else if(nodeIsFull(closestNode)) {
+            ADMP(va("Node %d is full\n",closestNode));
+            ent->pathid = -1;
+            return qfalse;
+        } else if(nodesAreConnected(ent->pathid, closestNode)) {
+            ADMP(va("Nodes %d and %d are already connected",ent->pathid,closestNode));
+            ent->pathid = -1;
+            return qfalse;
+        } else {
+            ADMP(va("%d <--> %d\n",ent->pathid, closestNode));
+            connectNodes(ent->pathid, closestNode);
+            ent->pathid = -1;
+        }
+    } else if(!Q_stricmp(command, "disconnect")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        if(ent->discpathid == -1) {
+            ADMP(va("Node %d selected for disconnecting\n",closestNode));
+            ent->discpathid = closestNode;
+        } else if(ent->discpathid == closestNode) {
+            ADMP(va("Node %d deselected\n",ent->discpathid));
+            ent->discpathid = -1;
+        } else if(!nodesAreConnected(ent->discpathid, closestNode)) {
+            ADMP(va("Nodes %d and %d are not connected",ent->discpathid,closestNode));
+            ent->discpathid = -1;
+            return qfalse;
+        } else {
+            ADMP(va("%d >-|-< %d\n",ent->discpathid, closestNode));
+            disconnectNodes(ent->discpathid, closestNode);
+            ent->discpathid = -1;
+        }
+        
+    } else if(!Q_stricmp(command, "move")) {
+        ent->pathid = -1;
+        ent->discpathid = -1;
+        if(ent->movepathid == -1 && nodeNearby) {
+            ADMP(va("Node %d selected for moving\n",closestNode));
+            ent->movepathid = closestNode;
+        } else if(ent->movepathid != -1 && (!nodeNearby || closestNode == ent->movepathid)) {
+            VectorCopy(playerPos, level.nodes[ent->movepathid].coord);
+            ADMP(va("Node %d moved to this location\n",ent->movepathid));
+            ent->movepathid = -1;
+        } else if(nodeNearby) {
+            ADMP("Too close to another node\n");
+            return qfalse;
+        } else {
+            ADMP("Error when moving node!!\n");
+            return qfalse;
+        }
+    } else if(!Q_stricmp(command, "action")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        if(G_SayArgc() < 3 + skipArg) {
+            ADMP("^3!waypoint ^7Usage: !waypoint action [jump/crouch/pounce/wallcrawl]\n");
+            return qfalse;
+        }
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        G_SayArgv(2 + skipArg, argument, sizeof(argument));
+        if(!Q_stricmp(argument, "jump")) {
+            level.nodes[closestNode].action = BOT_JUMP;
+        } else if(!Q_stricmp(argument, "crouch")) {
+            level.nodes[closestNode].action = BOT_KNEEL;
+        } else if(!Q_stricmp(argument, "pounce")) {
+            level.nodes[closestNode].action = BOT_POUNCE;
+        } else if(!Q_stricmp(argument, "wallcrawl")) {
+            level.nodes[closestNode].action = BOT_WALLCLIMB;
+        } else {
+            ADMP("^3!waypoint ^7Usage: !waypoint action [jump/crouch/pounce/wallcrawl]\n");
+            return qfalse;
+        }
+    } else if(!Q_stricmp(command, "cancel")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        ADMP("Operation Canceled\n");
+    } else if(!Q_stricmp(command, "timeout")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        if(G_SayArgc() < 3 + skipArg) {
+            ADMP("^3!waypoint ^7Usage: !waypoint timeout [time in msec]\n");
+            return qfalse;
+        }
+        G_SayArgv(2 + skipArg, argument, sizeof(argument));
+        
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        timeout = atoi(argument);
+        if(timeout <= 0)
+            timeout = 1;
+        if(timeout > 100000)
+            timeout = 100000;
+        level.nodes[closestNode].timeout = timeout;
+        ADMP(va("Node #%d timeout set to %d\n",closestNode,timeout));
+    } else if(!Q_stricmp(command, "migrate")) {
+        if(level.numNodes == 0) {
+            ADMP("This command is used to migrate PBot path files to the waypoints used by CoWBot\nIt seems you dont have any PBot paths for this map so this is useless for you\n");
+            return qfalse;
+        }
+        //Shift all nodes down so that they "sit" on the solid surface instead of floating in mid air above it
+        //We do this so that the bots cant see nodes on high ledges and assume that they can get to them
+        for(i=0; i < level.numNodes; i ++) {
+            VectorCopy(level.nodes[i].coord, tempVec);
+            tempVec[2] -= 38; //largest abs(mins[2]) value of all classes (bsuit value)
+            trap_Trace(&trace, level.nodes[i].coord, NULL, NULL, tempVec, ENTITYNUM_NONE, MASK_DEADSOLID);
+            
+            //if we hit something (ground) copy the end position to the position of the node
+            if(trace.fraction < 1.0f)
+                VectorCopy(trace.endpos, level.nodes[i].coord);
+            
+        }
+        for(i=0;i<level.numNodes;i++) {
+            for(n=0;n<MAX_PATH_NODES;n++) {
+                //PBot has a weird thing where it assigns values >=1000 to empty connections
+                //we change these to -1 so we can have more than 999 nodes
+                if(level.nodes[i].nextid[n] >= 1000)
+                    level.nodes[i].nextid[n] = -1;
+                
+            }
+            //now we reorder the connection ids so empty connections come last
+            for(n=0;n<MAX_PATH_NODES;n++) {
+                //we found and empty connection
+                if(level.nodes[i].nextid[n] == -1) {
+                    //move it to the back
+                    for(k=n;k<MAX_PATH_NODES - 1;k++) {
+                        tempID = level.nodes[i].nextid[k];
+                        level.nodes[i].nextid[k] = level.nodes[i].nextid[k+1];
+                        level.nodes[i].nextid[k+1] = tempID;
+                    }
+                }
+            }
+        }
+        ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
+    } else if(!Q_stricmp(command, "save")) {
+        Com_sprintf( fileName, sizeof( fileName ), "paths/%s/path.dat", map );
+        
+        len = trap_FS_FOpenFile( fileName, &f, FS_WRITE );
+        if( len < 0 ) {
+            ADMP("Couldn't Open File.  Created a New file\n" );
+        }
+        for( i = 0; i < level.numNodes; i++ ) {
+            s = va( "%d %f %f %f %d %d %d %d %d %d %d %d\n",
+            i,
+            level.nodes[i].coord[0],
+            level.nodes[i].coord[1],
+            level.nodes[i].coord[2],
+            level.nodes[i].nextid[0],
+            level.nodes[i].nextid[1],
+            level.nodes[i].nextid[2],
+            level.nodes[i].nextid[3],
+            level.nodes[i].nextid[4],
+            level.nodes[i].random,
+            level.nodes[i].timeout,
+            level.nodes[i].action);
+            trap_FS_Write( s, strlen( s ), f );
+        }
+        trap_FS_FCloseFile( f );
+        ADMP("Saved Waypoints\n" );
+    } else {
+        if(nodeNearby) {
+            ADMP(va("Nearby Node: #%d Coord: %f %f %f Connections: %d %d %d %d %d Action: %d Timeout: %d Random: %d\n", closestNode, 
+                    level.nodes[closestNode].coord[0], 
+                    level.nodes[closestNode].coord[1], 
+                    level.nodes[closestNode].coord[2], 
+                    level.nodes[closestNode].nextid[0], 
+                    level.nodes[closestNode].nextid[1], 
+                    level.nodes[closestNode].nextid[2],
+                    level.nodes[closestNode].nextid[3],
+                    level.nodes[closestNode].nextid[4],
+                    level.nodes[closestNode].action,
+                    level.nodes[closestNode].timeout,
+                    level.nodes[closestNode].random));
+            return qtrue;
+        }
+        ADMP("^3!waypoint ^7usage: !waypoint [add/del/connect/disconnect/move/action/cancel/timeout/save/migrate]\n");
+        return qfalse;
+    }
+    return qtrue;
 }

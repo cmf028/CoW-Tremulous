@@ -221,8 +221,6 @@ vmCvar_t g_bot_survival;
 vmCvar_t g_bot_wave_interval;
 
 //</bot stuff>
-// for editing the bot's paths
-vmCvar_t g_pathediting;
 
 // cicho-sza add-on:
 vmCvar_t  g_DebugMsg;
@@ -458,9 +456,6 @@ static cvarTable_t   gameCvarTable[ ] =
   { &g_bot_wave_interval, "g_bot_wave_interval", "60", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   
   // </bot stuff>
-  
-  // for editing the bot's paths
-  { &g_pathediting, "g_pathediting", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qfalse },
   
   // cicho-sza add-on:
   { &g_DebugMsg, "g_DebugMsg", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
@@ -845,14 +840,12 @@ void G_PathLoad( void )
         int i = 0;
         int k = 0;
         int n = 0;
-        
         fileHandle_t f;
         int len;
         char *path;
         char line[ MAX_STRING_CHARS ];
         char map[ MAX_QPATH ];
-        trace_t trace;
-        vec3_t tempVec;
+
         level.numNodes = 0;
         trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
         for(i = 0; i < MAX_NODES;i++)
@@ -925,18 +918,6 @@ void G_PathLoad( void )
                         level.distNode[i][k] = 999999999; //make distance huge to make route finding algorithm not use it
                 }
             }
-        }
-        //Shift all nodes down so that they "sit" on the solid surface instead of floating in mid air above it
-        //We do this so that the bots wont try to get to a node that is too high
-        for(i=0; i < level.numNodes; i ++) {
-            VectorCopy(level.nodes[i].coord, tempVec);
-            tempVec[2] -= 38; //largest abs(mins[2]) value of all classes (bsuit value)
-            trap_Trace(&trace, level.nodes[i].coord, NULL, NULL, tempVec, ENTITYNUM_NONE, MASK_DEADSOLID);
-            
-            //if we hit something (ground) copy the end position to the position of the node
-            if(trace.fraction < 1.0f)
-                VectorCopy(trace.endpos, level.nodes[i].coord);
-            
         }
         G_Printf( va("Loaded %d nodes\n", level.numNodes) );
 }
