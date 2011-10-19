@@ -7428,6 +7428,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     int timeout;
     int tempID;
     int len; //length of file when saving waypoints
+    int maxConnectDist = 400; //the maximum distance the nodes can be apart to autoconnect them
     char *s;
     char command[MAX_STRING_CHARS];
     char argument[MAX_STRING_CHARS];
@@ -7671,6 +7672,19 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             }
         }
         ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
+    } else if(!Q_stricmp(command, "autoconnect")) {
+        for(i=0;i<level.numNodes;i++) {
+            for(n=0;n<level.numNodes;n++) {
+                distance = Distance(level.nodes[i].coord, level.nodes[n].coord);
+                if(distance <= maxConnectDist && !nodeIsFull(i) && !nodeIsFull(n) && !nodesAreConnected(i,n) && i!=n) {
+                    trap_Trace(&trace, level.nodes[i].coord, NULL, NULL,level.nodes[n].coord, ENTITYNUM_NONE, MASK_DEADSOLID);
+                    if(trace.fraction == 1.0f) {
+                        connectNodes(i,n);
+                    }
+                }
+            }
+        }
+        ADMP("Nodes have been automatically connected\nPlease review and make changes before saving\n");
     } else if(!Q_stricmp(command, "save")) {
         Com_sprintf( fileName, sizeof( fileName ), "paths/%s/path.dat", map );
         
