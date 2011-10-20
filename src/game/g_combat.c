@@ -1389,7 +1389,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
     return;
   }
 
-  if( attacker->client->pers.nakedPlayer && targ->s.eType == ET_BUILDABLE )
+  if( attacker->client && attacker->client->pers.nakedPlayer && targ->s.eType == ET_BUILDABLE )
   //  return;
   // cicho-sza add on:
   {
@@ -1406,7 +1406,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
       damage = 1 + (int)( (float)iTmp * (float)(damage-1) / 100.0f);
   }
 
-  if( attacker->client->pers.nakedPlayer && targ->s.eType != ET_BUILDABLE )
+  if( attacker->client && attacker->client->pers.nakedPlayer && targ->s.eType != ET_BUILDABLE )
   {
     // instead of dealing no damage at all, let's check modifier
     if (g_strip_PlayerDmgPrcnt.integer < 1) return; // no more checking if no dmg to players

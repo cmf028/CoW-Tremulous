@@ -4220,7 +4220,7 @@ void G_BaseSelfDestruct( pTeam_t team )
 
   for( i = MAX_CLIENTS; i < level.num_entities; i++ )
   {
-    ent = &level.gentities[ i ];
+    ent = &g_entities[ i ];
     if( ent->health <= 0 )
       continue;
     if( ent->s.eType != ET_BUILDABLE )
