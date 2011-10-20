@@ -452,6 +452,7 @@ void G_BotModusManager( gentity_t *self ) {
                 self->botMind->currentModus = REPAIR;
                 if(!goalIsDamagedBuildingOnTeam(self)) {
                     setGoalEntity(self, &g_entities[damagedBuildingIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else {
