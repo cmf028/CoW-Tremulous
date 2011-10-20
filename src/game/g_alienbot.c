@@ -70,7 +70,7 @@ int G_BotEvolveToClass( gentity_t *ent, char *classname, usercmd_t *botCmdBuffer
                 return 0;
             break;
         case PCL_ALIEN_LEVEL3_UPG:
-            if(g_bot_goon.integer == 0)
+            if(g_bot_advgoon.integer == 0)
                 return 0;
             break;
         case PCL_ALIEN_LEVEL4:
