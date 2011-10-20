@@ -464,7 +464,7 @@ qboolean botNeedsToHeal(gentity_t *self) {
     return self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats);
 }
 qboolean goalIsEnemy(gentity_t *self) {
-    return targetIsEntity(self->botMind->goal) && getTargetTeam(self->botMind->goal) != getEntityTeam(self) && !self->botMind->needsNewGoal;
+    return targetIsEntity(self->botMind->goal) && getTargetTeam(self->botMind->goal) != getEntityTeam(self) && getTargetTeam(self->botMind->goal) != PTE_NONE && !self->botMind->needsNewGoal;
 }
 qboolean goalIsMedistat(gentity_t *self) {
     return targetIsEntity(self->botMind->goal) && getTargetType(self->botMind->goal) == ET_BUILDABLE 
@@ -1504,7 +1504,7 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
                     //if the entity is a player and not us
                 } else if( target->client && self != target) {
                     //if we are not on the same team (unless we can attack teamates)
-                    if( target->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM] || includeTeam ) {
+                    if( (target->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM] && target->spawned)|| includeTeam ) {
                         
                         //store the new distance and the index of the enemy
                         minDistance = newDistance;
