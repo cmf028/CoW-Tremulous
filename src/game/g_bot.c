@@ -371,8 +371,6 @@ void G_BotModusManager( gentity_t *self ) {
     //search for a new enemy every so often
    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0)
         enemyIndex = botFindClosestEnemy(self, qfalse);
-   
-    
     
     switch(self->botMind->command) {
         case BOT_AUTO:
@@ -1511,7 +1509,7 @@ int botFindClosestEnemy( gentity_t *self, qboolean includeTeam ) {
                     //if the entity is a player and not us
                 } else if( target->client && self != target) {
                     //if we are not on the same team (unless we can attack teamates)
-                    if( (target->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM] && target->spawned)|| includeTeam ) {
+                    if( (target->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM])|| includeTeam ) {
                         
                         //store the new distance and the index of the enemy
                         minDistance = newDistance;
