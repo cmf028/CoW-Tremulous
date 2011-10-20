@@ -71,7 +71,7 @@ void G_BotAdd( char *name, int team, int skill ) {
     bot->botMind->state = FINDNEWNODE;
     bot->botMind->timeFoundEnemy = 0;
     bot->botMind->followingRoute = qfalse;
-    
+    bot->botMind->needsNewGoal = qtrue;
     setSkill(bot, skill);
 
     
@@ -371,50 +371,115 @@ void G_BotModusManager( gentity_t *self ) {
     //search for a new enemy every so often
    if(self->client->time10000 % BOT_ENEMYSEARCH_INTERVAL == 0)
         enemyIndex = botFindClosestEnemy(self, qfalse);
-    
-    //if we are in attackmode, we have an enemy, continue chasing him for a while even if he goes out of sight/range unless a new enemy is closer
-    if(level.time - self->botMind->enemyLastSeen < BOT_ENEMY_CHASETIME && self->botMind->currentModus == ATTACK && g_entities[getTargetEntityNumber(self->botMind->goal)].health > 0 && enemyIndex == ENTITYNUM_NONE)
-        enemyIndex = getTargetEntityNumber(self->botMind->goal);
-    
-    //dont do anything if given the idle command
-    if(self->botMind->command == BOT_IDLE) {
-        self->botMind->currentModus = IDLE;
-        return;
-    }
    
     
-    if(enemyIndex != ENTITYNUM_NONE && self->botMind->command != BOT_REPAIR) {
-        self->botMind->currentModus = ATTACK;
-        if(enemyIndex != getTargetEntityNumber(self->botMind->goal)) {
-            setGoalEntity(self, &g_entities[enemyIndex]);
-        }
-        self->botMind->state = FINDNEWNODE;
-    } else if(damagedBuildingIndex != ENTITYNUM_NONE && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats) && self->botMind->command != BOT_ATTACK) {
-        self->botMind->currentModus = REPAIR;
-        if(damagedBuildingIndex != getTargetEntityNumber(self->botMind->goal)) {
-            setGoalEntity(self, &g_entities[damagedBuildingIndex]);
-        }
-        self->botMind->state = FINDNEWNODE;
-    } else if(medistatIndex != ENTITYNUM_NONE && self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats) 
-    && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS && self->botMind->command != BOT_REPAIR) {
-        self->botMind->currentModus = HEAL;
-        if(medistatIndex != getTargetEntityNumber(self->botMind->goal)) {
-            setGoalEntity(self, &g_entities[medistatIndex]);
-        }
-        self->botMind->state = FINDNEWNODE;
-    } else if(armouryIndex != ENTITYNUM_NONE && botNeedsItem(self) && g_bot_buy.integer > 0 && self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS 
-    && self->botMind->command != BOT_REPAIR) {
-        self->botMind->currentModus = BUY;
-        if(armouryIndex != getTargetEntityNumber(self->botMind->goal)) {
-            setGoalEntity(self, &g_entities[armouryIndex]);
-        }
-        self->botMind->state = FINDNEWNODE;
-    } else if(g_bot_roam.integer > 0 && self->botMind->command != BOT_REPAIR){
-        self->botMind->currentModus = ROAM;
-    } else {
-        self->botMind->currentModus = IDLE;
-    }
     
+    switch(self->botMind->command) {
+        case BOT_AUTO:
+            if(enemyIndex != ENTITYNUM_NONE || goalIsEnemy(self)) {
+                self->botMind->currentModus = ATTACK;
+                if(!goalIsEnemy(self)) {
+                    setGoalEntity(self, &g_entities[enemyIndex]);
+                    self->botMind->enemyLastSeen = level.time;
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if((damagedBuildingIndex != ENTITYNUM_NONE || goalIsDamagedBuildingOnTeam(self)) && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
+                self->botMind->currentModus = REPAIR;
+                if(!goalIsDamagedBuildingOnTeam(self)) {
+                    setGoalEntity(self, &g_entities[damagedBuildingIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) && getEntityTeam(self) == PTE_HUMANS) {
+                self->botMind->currentModus = HEAL;
+                if(!goalIsMedistat(self)) {
+                    setGoalEntity(self, &g_entities[medistatIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
+                self->botMind->currentModus = BUY;
+                if(!goalIsArmoury(self)) {
+                    setGoalEntity(self, &g_entities[armouryIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if(g_bot_roam.integer > 0){
+                if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
+                    setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
+                }
+                self->botMind->currentModus = ROAM;
+            } else {
+                self->botMind->currentModus = IDLE;
+            }
+            break;
+        case BOT_ATTACK:
+            if(enemyIndex != ENTITYNUM_NONE || goalIsEnemy(self)) {
+                self->botMind->currentModus = ATTACK;
+                if(!goalIsEnemy(self)) {
+                    setGoalEntity(self, &g_entities[enemyIndex]);
+                    self->botMind->enemyLastSeen = level.time;
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) 
+                && getEntityTeam(self) == PTE_HUMANS) {
+                self->botMind->currentModus = HEAL;
+                if(!goalIsMedistat(self)) {
+                    setGoalEntity(self, &g_entities[medistatIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
+                self->botMind->currentModus = BUY;
+                if(!goalIsArmoury(self)) {
+                    setGoalEntity(self, &g_entities[armouryIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else if(g_bot_roam.integer > 0){
+                if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
+                    setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
+                }
+                self->botMind->currentModus = ROAM;
+            } else {
+                self->botMind->currentModus = IDLE;
+            }
+            break;
+        case BOT_REPAIR:
+            if((damagedBuildingIndex != ENTITYNUM_NONE || goalIsDamagedBuildingOnTeam(self)) && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
+                self->botMind->currentModus = REPAIR;
+                if(!goalIsDamagedBuildingOnTeam(self)) {
+                    setGoalEntity(self, &g_entities[damagedBuildingIndex]);
+                }
+                self->botMind->state = FINDNEWNODE;
+            } else {
+                self->botMind->currentModus = IDLE;
+            }
+            break;
+        case BOT_IDLE:
+            self->botMind->currentModus = IDLE;
+            break;
+    }
+
+    if(self->botMind->needsNewGoal) {
+        self->botMind->needsNewGoal = qfalse;
+    }
+}
+qboolean botNeedsToHeal(gentity_t *self) {
+    return self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats);
+}
+qboolean goalIsEnemy(gentity_t *self) {
+    return targetIsEntity(self->botMind->goal) && getTargetTeam(self->botMind->goal) != getEntityTeam(self) && !self->botMind->needsNewGoal;
+}
+qboolean goalIsMedistat(gentity_t *self) {
+    return targetIsEntity(self->botMind->goal) && getTargetType(self->botMind->goal) == ET_BUILDABLE 
+    && BG_FindBuildNumForEntityName(self->botMind->goal.ent->classname) == BA_H_MEDISTAT && !self->botMind->needsNewGoal;
+}
+qboolean goalIsArmoury(gentity_t *self) {
+    return targetIsEntity(self->botMind->goal) && getTargetType(self->botMind->goal) == ET_BUILDABLE 
+    && BG_FindBuildNumForEntityName(self->botMind->goal.ent->classname) == BA_H_ARMOURY && !self->botMind->needsNewGoal;
+}
+qboolean goalIsDamagedBuildingOnTeam(gentity_t *self) {
+    return targetIsEntity(self->botMind->goal) && getTargetType(self->botMind->goal) == ET_BUILDABLE 
+    && buildableIsDamaged(self->botMind->goal.ent) && getTargetTeam(self->botMind->goal) == getEntityTeam(self) && !self->botMind->needsNewGoal;
+}
+void requestNewGoal(gentity_t *self) {
+    self->botMind->needsNewGoal = qtrue;
 }
 /**G_BotMoveDirectlyToGoal
 *Used whenever we need to go directly to the goal
@@ -462,39 +527,20 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
 }
 
 
-//using PBot Code for now..
+
 void G_BotSearchForGoal(gentity_t *self, usercmd_t *botCmdBuffer) {
-    switch(self->botMind->state) {
-        case FINDNEWNODE: findNewNode(self, botCmdBuffer); break;
-        case FINDNEXTNODE: findNextNode(self); break;
-        case TARGETNODE:break; //basically used as a flag that is checked elsewhere
-        case LOST: findNewNode(self, botCmdBuffer);break; //This should never happen unless there are 0 waypoints on the map
-        case TARGETOBJECTIVE: break;
-        default: break;
+    vec3_t targetPos;
+    vec3_t playerPos;
+    VectorCopy(self->s.origin,playerPos);
+    playerPos[2] += self->r.mins[2];
+    getTargetPos(self->botMind->goal,&targetPos);
+    //we have arrived at the goal so request a new one
+    if(DistanceSquared(playerPos, targetPos) < Square(70)) {
+        requestNewGoal(self);
+        return;
     }
-    if(self->botMind->state == TARGETNODE) {
-        #ifdef BOT_DEBUG
-        trap_SendServerCommand(-1,va("print \"Now Targeting Node %d\n\"", self->botMind->targetNode));
-        #endif
-        setTargetCoordinate(&self->botMind->targetNode, level.nodes[self->botMind->targetNodeID].coord);
-        G_BotGoto(self, self->botMind->targetNode, botCmdBuffer);
-        
-        if(self->botMind->visited[4] >= 0 ) {
-            doLastNodeAction(self, botCmdBuffer);
-            if(level.time - self->botMind->timeFoundNode > level.nodes[self->botMind->visited[4]].timeout) {
-                self->botMind->state = FINDNEWNODE;
-                self->botMind->timeFoundNode = level.time;
-            }
-        }
-        else if( level.time - self->botMind->timeFoundNode > 10000 ) {
-            self->botMind->state = FINDNEWNODE;
-            self->botMind->timeFoundNode = level.time;
-        }
-        if(distanceToTargetNode(self) < 70) {
-            self->botMind->state = FINDNEXTNODE;
-            self->botMind->timeFoundNode = level.time;
-        }
-    }
+    //Go to the goal
+    G_BotMoveDirectlyToGoal(self, botCmdBuffer);
 }
 
 /**G_BotGoto
@@ -584,6 +630,22 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
+    botTarget_t proposedTarget;
+    setTargetEntity(&proposedTarget, &g_entities[botFindClosestEnemy(self, qfalse)]);
+    //enemy has died so signal that the goal is unusable
+    if(g_entities[getTargetEntityNumber(self->botMind->goal)].health <= 0) {
+        requestNewGoal(self);
+        return;
+    }
+    //if we cant see our current target, but we can see the closest Enemy, we should stop attacking our current target and attack said closest enemy
+    if(!botTargetInRange(self, self->botMind->goal, MASK_SHOT) && botTargetInRange(self,proposedTarget, MASK_SHOT)) {
+        requestNewGoal(self);
+        return;
+        //we havent "seen" the current enemy for a period of time, so signal that the goal is unusuable
+    } else if(level.time - self->botMind->enemyLastSeen > BOT_ENEMY_CHASETIME) {
+        requestNewGoal(self);
+        return;
+    }
     
     //switch to blaster
     if((BG_WeaponIsEmpty(self->client->ps.weapon, self->client->ps.ammo, self->client->ps.powerups)
@@ -594,6 +656,8 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
     if(self->client->ps.stats[STAT_PTEAM] == PTE_ALIENS) {
         self->botMind->enemyLastSeen = level.time;
     }
+    
+    
     if(botTargetInAttackRange(self, self->botMind->goal)) {
         
         self->botMind->followingRoute = qfalse;
@@ -621,6 +685,11 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
+    //the target building has died so signal that the goal is unusable
+    if(g_entities[getTargetEntityNumber(self->botMind->goal)].health <= 0) {
+        requestNewGoal(self);
+        return;
+    }
     if(self->client->ps.weapon != WP_HBUILD)
         G_ForceWeaponChange( self, WP_HBUILD );
     if(botTargetInAttackRange(self, self->botMind->goal) && botGetAimEntityNumber(self) == getTargetEntityNumber(self->botMind->goal) ) {
@@ -636,8 +705,17 @@ void G_BotRepair(gentity_t *self, usercmd_t *botCmdBuffer) {
  * Decided when to be called in G_BotModusManager
  */
 void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
-    
     vec3_t targetPos;
+    //the medi has died so signal that the goal is unusable
+    if(g_entities[getTargetEntityNumber(self->botMind->goal)].health <= 0) {
+        requestNewGoal(self);
+        return;
+    }
+    //this medi is no longer powered so signal that the goal is unusable
+    if(!g_entities[getTargetEntityNumber(self->botMind->goal)].powered) {
+        requestNewGoal(self);
+        return;
+    }
     getTargetPos(self->botMind->goal, &targetPos);
     if(DistanceSquared(self->s.origin, targetPos) > Square(50))
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
@@ -652,8 +730,18 @@ void G_BotHeal(gentity_t *self, usercmd_t *botCmdBuffer) {
 void G_BotBuy(gentity_t *self, usercmd_t *botCmdBuffer) {
     vec3_t targetPos;
     int i;
+    //the armoury has died so signal that the goal is unuseable
+    if(g_entities[getTargetEntityNumber(self->botMind->goal)].health <= 0) {
+        requestNewGoal(self);
+        return;
+    }
+    //this armoury is no longer powered, so signal that the goal is unusable
+    if(!g_entities[getTargetEntityNumber(self->botMind->goal)].powered) {
+        requestNewGoal(self);
+        return;
+    }
     getTargetPos(self->botMind->goal, &targetPos);
-    if(DistanceSquared(self->s.pos.trBase, targetPos) > Square(100))
+    if(DistanceSquared(self->s.pos.trBase, targetPos) > Square(100)) 
         G_BotMoveDirectlyToGoal(self, botCmdBuffer);
     else if( self->client->time10000 % 1000 == 0){
         // sell current weapon
@@ -716,9 +804,9 @@ void G_BotEvolve ( gentity_t *self, usercmd_t *botCmdBuffer )
         }
 }
 void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
-    int buildingIndex = ENTITYNUM_NONE;
-    qboolean teamRush;
-    if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
+    //int buildingIndex = ENTITYNUM_NONE;
+    //qboolean teamRush;
+    /*if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS) {
         buildingIndex = botFindBuilding(self, BA_A_OVERMIND, -1);
         if(buildingIndex == ENTITYNUM_NONE) {
             buildingIndex = botFindBuilding(self, BA_A_SPAWN, -1);
@@ -736,9 +824,9 @@ void G_BotRoam(gentity_t *self, usercmd_t *botCmdBuffer) {
             setGoalEntity(self,&g_entities[buildingIndex]);
         else
             G_BotMoveDirectlyToGoal(self, botCmdBuffer);
-    }else {
+    }else {*/
         G_BotSearchForGoal(self, botCmdBuffer); 
-    }
+   // }
 }
 /**
  * G_BotReactToEnemy
@@ -1067,10 +1155,7 @@ void getTargetPos(botTarget_t target, vec3_t *rVec) {
 }
 int getTargetTeam( botTarget_t target) {
     if(target.ent) {
-        if(target.ent->client)
-            return target.ent->client->ps.stats[STAT_PTEAM];
-        else
-            return target.ent->biteam;
+        return getEntityTeam(target.ent);
     } else
         return PTE_NONE;
 }
@@ -1122,6 +1207,16 @@ void setTargetCoordinate(botTarget_t *target, vec3_t goal ) {
     target->ent = NULL;
 }
 
+//helper function for getting an entity's team
+int getEntityTeam(gentity_t *ent) {
+    if(ent->client) {
+        return ent->client->ps.stats[STAT_PTEAM];
+    } else if(ent->s.eType == ET_BUILDABLE) {
+        return ent->biteam;
+    } else {
+        return PTE_NONE;
+    }
+}
 int botFindBuilding(gentity_t *self, int buildingType, int range) {
 
     // range converted to a vector
@@ -1146,7 +1241,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
         for( i = 0; i < total_entities; ++i ) {
             target = &g_entities[entityList[ i ] ];
             
-            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered) && target->health > 0) {
+            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || (target->powered && target->spawned)) && target->health > 0) {
                 newDistance = DistanceSquared( self->s.pos.trBase, target->s.pos.trBase );
                 if( newDistance < minDistance|| minDistance == -1) {
                     minDistance = newDistance;
@@ -1159,7 +1254,7 @@ int botFindBuilding(gentity_t *self, int buildingType, int range) {
         for( i = 0; i < level.num_entities; ++i ) {
             target = &g_entities[i];
             
-            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || target->powered) && target->health > 0) {
+            if( target->s.eType == ET_BUILDABLE && target->s.modelindex == buildingType && (target->biteam == PTE_ALIENS || (target->powered && target->spawned)) && target->health > 0) {
                 newDistance = DistanceSquared(self->s.pos.trBase,target->s.pos.trBase);
                 if( newDistance < minDistance|| minDistance == -1) {
                     minDistance = newDistance;
@@ -1200,10 +1295,10 @@ void G_BotSpectatorThink( gentity_t *self ) {
     
     //reset stuff
     self->botMind->followingRoute = qfalse;
-    setTargetEntity(&self->botMind->goal, NULL);
     self->botMind->state = FINDNEWNODE;
     self->botMind->currentModus = IDLE;
     self->botMind->targetNodeID = -1;
+    self->botMind->needsNewGoal = qtrue;
     for(i=0;i<5;i++)
         self->botMind->visited[i] = -1;
     
@@ -1489,8 +1584,6 @@ int findClosestNode( botTarget_t startTarget) {
         long distance = 0;
         long closestNodeDistances[10] = {-1,-1,-1,-1, -1, -1, -1, -1, -1, -1};
         int closestNodes[10] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
-        int temp;
-        long temp2;
         vec3_t start;
         getTargetPos(startTarget, &start);
         //move viewpoint to ground (used for trace)

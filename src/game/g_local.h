@@ -157,6 +157,7 @@ typedef struct
     botSkill_t botSkill;
     botModus_t currentModus;
     int visited[5]; //used for random roaming
+    qboolean needsNewGoal;
 } botMemory_t;
 //============================================================================
 

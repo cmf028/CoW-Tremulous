@@ -216,6 +216,13 @@ qboolean botStructureIsDamaged(int team)
     }
     return qfalse;
 }
+qboolean buildableIsDamaged(gentity_t *building) {
+    buildable_t buildingNum = BG_FindBuildNumForEntityName(building->classname);
+    if(building->health < BG_FindHealthForBuildable(buildingNum) && building->health > 0 && building->spawned)
+        return qtrue;
+    else 
+        return qfalse;
+}
 
 qboolean botWeaponHasLowAmmo(gentity_t *self) {
     int i;

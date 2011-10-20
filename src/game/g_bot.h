@@ -79,10 +79,18 @@ qboolean botShouldJump(gentity_t *self);
 qboolean botNeedsItem(gentity_t *self);
 qboolean botCanShop(gentity_t *self);
 qboolean botStructureIsDamaged(int team);
+qboolean buildableIsDamaged(gentity_t *building);
 int G_BotBuyWeapon(gentity_t *ent, int weapon);
 float calcPounceAimDelta(gentity_t *self, botTarget_t target);
 float calcBarbAimDelta(gentity_t *self, botTarget_t target);
 qboolean botOnLadder( gentity_t *self );
+qboolean botNeedsToHeal(gentity_t *self);
+qboolean goalIsEnemy(gentity_t *self);
+qboolean goalIsMedistat(gentity_t *self);
+qboolean goalIsArmoury(gentity_t *self);
+qboolean goalIsDamagedBuildingOnTeam(gentity_t *self);
+void requestNewGoal(gentity_t *self);
+int getEntityTeam(gentity_t *ent);
 //configureable constants
 //For a reference of how far a number represents, take a look at tremulous.h
 
