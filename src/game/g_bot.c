@@ -381,7 +381,7 @@ void G_BotModusManager( gentity_t *self ) {
                 if(!goalIsEnemy(self)) {
                     setGoalEntity(self, &g_entities[enemyIndex]);
                     self->botMind->enemyLastSeen = level.time;
-                    self->botMind->needsNewGoal = qfalsel
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((damagedBuildingIndex != ENTITYNUM_NONE || goalIsDamagedBuildingOnTeam(self)) && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
