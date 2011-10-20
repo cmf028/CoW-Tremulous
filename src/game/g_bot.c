@@ -381,29 +381,34 @@ void G_BotModusManager( gentity_t *self ) {
                 if(!goalIsEnemy(self)) {
                     setGoalEntity(self, &g_entities[enemyIndex]);
                     self->botMind->enemyLastSeen = level.time;
+                    self->botMind->needsNewGoal = qfalsel
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((damagedBuildingIndex != ENTITYNUM_NONE || goalIsDamagedBuildingOnTeam(self)) && BG_InventoryContainsWeapon(WP_HBUILD,self->client->ps.stats)) {
                 self->botMind->currentModus = REPAIR;
                 if(!goalIsDamagedBuildingOnTeam(self)) {
                     setGoalEntity(self, &g_entities[damagedBuildingIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = HEAL;
                 if(!goalIsMedistat(self)) {
                     setGoalEntity(self, &g_entities[medistatIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = BUY;
                 if(!goalIsArmoury(self)) {
                     setGoalEntity(self, &g_entities[armouryIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if(g_bot_roam.integer > 0){
                 if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
                     setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->currentModus = ROAM;
             } else {
@@ -416,6 +421,7 @@ void G_BotModusManager( gentity_t *self ) {
                 if(!goalIsEnemy(self)) {
                     setGoalEntity(self, &g_entities[enemyIndex]);
                     self->botMind->enemyLastSeen = level.time;
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((medistatIndex != ENTITYNUM_NONE || goalIsMedistat(self)) &&  botNeedsToHeal(self) 
@@ -423,17 +429,20 @@ void G_BotModusManager( gentity_t *self ) {
                 self->botMind->currentModus = HEAL;
                 if(!goalIsMedistat(self)) {
                     setGoalEntity(self, &g_entities[medistatIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if((armouryIndex != ENTITYNUM_NONE || goalIsArmoury(self)) && botNeedsItem(self) && g_bot_buy.integer > 0 && getEntityTeam(self) == PTE_HUMANS) {
                 self->botMind->currentModus = BUY;
                 if(!goalIsArmoury(self)) {
                     setGoalEntity(self, &g_entities[armouryIndex]);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->state = FINDNEWNODE;
             } else if(g_bot_roam.integer > 0){
                 if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
                     setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
+                    self->botMind->needsNewGoal = qfalse;
                 }
                 self->botMind->currentModus = ROAM;
             } else {
@@ -456,9 +465,7 @@ void G_BotModusManager( gentity_t *self ) {
             break;
     }
 
-    if(self->botMind->needsNewGoal) {
-        self->botMind->needsNewGoal = qfalse;
-    }
+        
 }
 qboolean botNeedsToHeal(gentity_t *self) {
     return self->health < BOT_LOW_HP && !BG_InventoryContainsUpgrade(UP_MEDKIT, self->client->ps.stats);
