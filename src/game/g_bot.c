@@ -636,8 +636,6 @@ void G_BotAttack(gentity_t *self, usercmd_t *botCmdBuffer) {
     setTargetEntity(&proposedTarget, &g_entities[botFindClosestEnemy(self, qfalse)]);
     //enemy has died so signal that the goal is unusable
     if(g_entities[getTargetEntityNumber(self->botMind->goal)].health <= 0) {
-        if(!(self->botMind->goal.ent->r.svFlags & SVF_BOT) && self->botMind->goal.ent->s.eType == ET_PLAYER)
-            G_Say(self,NULL, SAY_ALL, "Humans are obsolete, bots will rule Trem");
         requestNewGoal(self);
         return;
     }
