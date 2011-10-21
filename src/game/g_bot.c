@@ -931,12 +931,14 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
     vec3_t forward,right,up;
     vec3_t muzzle, targetPos;
     vec3_t myMaxs, targetMaxs;
+    vec3_t myMins;
+    vec3_t pounceTarget;
     trace_t trace;
     int distance, myMax, targetMax;
     AngleVectors( self->client->ps.viewangles, forward, right, up);
     
     CalcMuzzlePoint( self, forward, right, up , muzzle);
-    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], NULL, myMaxs, NULL, NULL, NULL);
+    BG_FindBBoxForClass(self->client->ps.stats[STAT_PCLASS], myMins, myMaxs, NULL, NULL, NULL);
     
     if(targetIsEntity(target) && target.ent->client)
         BG_FindBBoxForClass(target.ent->client->ps.stats[STAT_PCLASS], NULL,targetMaxs, NULL, NULL, NULL);
@@ -946,6 +948,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
         VectorSet(targetMaxs, 0, 0, 0);
     targetMax = VectorLengthSquared(targetMaxs);
     myMax = VectorLengthSquared(myMaxs);
+    getTargetPos(target, &targetPos);
     
     switch(self->s.weapon) {
         case WP_ABUILD:
@@ -978,11 +981,26 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             break;
         case WP_ALEVEL3:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 900; //An arbitrary value for pounce, has nothing to do with actual range
+            //need to check if we can pounce to the target
+            VectorCopy(targetPos,pounceTarget);
+            pounceTarget[2] -= myMins[2];
+            trap_Trace(&trace,self->s.origin,myMins,myMaxs,pounceTarget,self->s.number,MASK_SHOT);
+            if(trace.entityNum == getTargetEntityNumber(target))
+                secondaryRange = 900; //An arbitrary value for pounce, has nothing to do with actual range
+            else
+                secondaryRange = 0;
             break;
         case WP_ALEVEL3_UPG:
             range = LEVEL3_CLAW_RANGE;
-            secondaryRange = 900; //An arbitrary value for pounce and barbs, has nothing to do with actual range
+            //need to check if we can pounce to the target
+            VectorCopy(targetPos,pounceTarget);
+            pounceTarget[2] -= myMins[2];
+            trap_Trace(&trace,self->s.origin,myMins,myMaxs,pounceTarget,self->s.number,MASK_SHOT);
+            //we can pounce, or we have barbs
+            if(trace.entityNum == getTargetEntityNumber(target) || self->client->ps.ammo[WP_ALEVEL3_UPG] > 0)
+                secondaryRange = 900; //An arbitrary value for pounce and barbs, has nothing to do with actual range
+            else
+                secondaryRange = 900;
             break;
         case WP_ALEVEL4:
             range = LEVEL4_CLAW_RANGE;
@@ -1016,7 +1034,7 @@ qboolean botTargetInAttackRange(gentity_t *self, botTarget_t target) {
             range = 4098 * 4; //large range for guns because guns have large ranges :)
             secondaryRange = 0; //no secondary attack
     }
-    getTargetPos(target, &targetPos);
+    
     trap_Trace(&trace,muzzle,NULL,NULL,targetPos,self->s.number,MASK_SHOT);
     distance = DistanceSquared(self->s.pos.trBase, targetPos);
     distance = (int) distance - myMax/2 - targetMax/2;
@@ -1046,6 +1064,7 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
     targetMax = VectorLengthSquared(targetMaxs);
     myMax = VectorLengthSquared(myMaxs);
     getTargetPos(self->botMind->goal,&targetPos);
+    
     distance = DistanceSquared(self->s.pos.trBase, targetPos);
     distance = (int) distance - myMax/2 - targetMax/2;
     
@@ -1087,6 +1106,8 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                     botCmdBuffer->buttons |= BUTTON_ATTACK2; //zap
                 break;
             case PCL_ALIEN_LEVEL3:
+                //check if we can pounce there
+                
                 if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_SPEED) {
                     botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->goal) - self->client->ps.delta_angles[PITCH]; //look up a bit more
@@ -1102,7 +1123,8 @@ void botFireWeapon(gentity_t *self, usercmd_t *botCmdBuffer) {
                     botCmdBuffer->forwardmove = 0; //dont move while sniping
                     botCmdBuffer->rightmove = 0;
                     botCmdBuffer->upmove = 0;
-                } else {       
+                } else {
+                    //check if we can pounce there
                     if(distance > Square(2 * LEVEL3_CLAW_RANGE) && 
                     self->client->ps.stats[ STAT_MISC ] < LEVEL3_POUNCE_UPG_SPEED) {
                         botCmdBuffer->angles[PITCH] -= calcPounceAimDelta(self, self->botMind->goal) - self->client->ps.delta_angles[PITCH];; //look up a bit more
