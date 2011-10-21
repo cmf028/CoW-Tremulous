@@ -243,7 +243,7 @@ qboolean botPathIsBlocked(gentity_t *self) {
     AngleVectors( self->client->ps.viewangles, forward, right, NULL);
     VectorCopy(self->client->ps.origin, end);
     end[2] += mins[2] - 20;
-        trap_Trace(&trace, self->client->ps.origin, NULL, NULL, end, self->s.number,MASK_SHOT);
+        trap_Trace(&trace, self->client->ps.origin, NULL, NULL, end, self->s.number,MASK_DEADSOLID);
         //forward vector is the direction we are aiming, NOT the direction we are moving, so derive it from the right vector and the normal of the plane we are on
         VectorCopy(trace.plane.normal, up);
         
