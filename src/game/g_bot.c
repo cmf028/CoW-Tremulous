@@ -590,7 +590,7 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     //we have stopped moving forward, try to get around whatever is blocking us
     if( botPathIsBlocked(self)) {
         //handle ladders
-        if(botOnLadder(self)) {
+        if(botOnLadder(self) && !targetIsEntity(target) && level.time - self->botMind->timeFoundNode < 4000) {
             AngleVectors(self->client->ps.viewangles, forward, NULL, NULL);
             forward[2] = 30;
             //aim at ladder (well, just a bit above)
