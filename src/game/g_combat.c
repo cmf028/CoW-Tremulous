@@ -433,7 +433,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
     {
       //make bot say his line
       if(attacker->r.svFlags & SVF_BOT && !( self->r.svFlags & SVF_BOT) && rand() % 9 <= 3 && attacker->client->ps.stats[STAT_PTEAM] != self->client->ps.stats[STAT_PTEAM])
-	 G_Say(attacker,self, SAY_ALL, "Humans are obsolete, bots will rule Trem");
+	 G_Say(attacker,NULL, SAY_ALL, "Humans are obsolete, bots will rule Trem");
       
       killerName = attacker->client->pers.netname;
       tk = ( attacker != self && attacker->client->ps.stats[ STAT_PTEAM ] 
@@ -540,7 +540,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
       
       //make bot say his line
       if(attacker->r.svFlags & SVF_BOT && !(self->r.svFlags & SVF_BOT))
-	 G_Say(attacker,self, SAY_TEAM, "Sorry!");
+	 G_Say(attacker,NULL, SAY_TEAM, "Sorry!");
       
       // Retribution: transfer value of player from attacker to victim
       if( g_retribution.integer || attacker->r.svFlags & SVF_BOT) {
