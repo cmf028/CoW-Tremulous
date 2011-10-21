@@ -574,12 +574,13 @@ void G_BotGoto(gentity_t *self, botTarget_t target, usercmd_t *botCmdBuffer) {
     //move forward
     botCmdBuffer->forwardmove = 127;
     
-    //sprint 
-    if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
-        self->client->ps.stats[STAT_STATE] |= SS_SPEEDBOOST;
+    
     //dodge if going toward enemy
     if(self->client->ps.stats[STAT_PTEAM] != getTargetTeam(target) && getTargetTeam(target) != PTE_NONE) {
         G_BotDodge(self, botCmdBuffer);
+        //sprint 
+        if(self->client->ps.stats[STAT_PTEAM] == PTE_HUMANS)
+            self->client->ps.stats[STAT_STATE] |= SS_SPEEDBOOST;
     }
     
     //this is here so we dont run out of stamina..
