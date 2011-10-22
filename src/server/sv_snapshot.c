@@ -628,6 +628,10 @@ void SV_SendClientSnapshot( client_t *client ) {
 	byte		msg_buf[MAX_MSGLEN];
 	msg_t		msg;
 
+        //bots dont need snapshots
+        if ( client->gentity && client->gentity->r.svFlags & SVF_BOT ) {
+            return;
+        }
 	// build the snapshot
 	SV_BuildClientSnapshot( client );
 
