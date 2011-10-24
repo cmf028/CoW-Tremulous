@@ -861,11 +861,12 @@ void G_PathLoad( void )
                 level.nodes[i].random = -1;
                 level.nodes[i].timeout = 10000;
                 level.nodes[i].action = 0;
+                level.nodes[i].radius = 70;
         }
-        len = trap_FS_FOpenFile( va( "paths/%s/path.dat", map ), &f, FS_READ );
+        len = trap_FS_FOpenFile( va( "waypoints/%s/waypoint.dat", map ), &f, FS_READ );
         if( len < 0 )
         {
-                G_Printf( "Found no path.dat for map\n" );
+                G_Printf( "Found no waypoint.dat for map\n" );
                 return;
         }
         path = G_Alloc( len + 1 );
@@ -877,7 +878,7 @@ void G_PathLoad( void )
         {
                 if( i >= sizeof( line ) - 1 )
                 {
-                        G_Printf( "Error loading path.dat for map\n" );
+                        G_Printf( "Error loading waypoint.dat for map\n" );
                         return;
                 }
                 line[ i++ ] = *path;
@@ -885,8 +886,8 @@ void G_PathLoad( void )
                 if( *path == '\n' )
                 {
                         i = 0; 
-                        if( level.numNodes >= MAX_NODES ){G_Printf( "Reached path limit\n" );return;}
-                        sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d\n", 
+                        if( level.numNodes >= MAX_NODES ){G_Printf( "Reached waypoint limit\n" );return;}
+                        sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d %d\n", 
                                                 &level.numNodes,
                                                 &level.nodes[level.numNodes].coord[0], 
                                                 &level.nodes[level.numNodes].coord[1], 
@@ -898,7 +899,8 @@ void G_PathLoad( void )
                                                 &level.nodes[level.numNodes].nextid[4],
                                                 &level.nodes[level.numNodes].random,
                                                 &level.nodes[level.numNodes].timeout,
-                                                &level.nodes[level.numNodes].action ); 
+                                                &level.nodes[level.numNodes].action,
+                                                &level.nodes[level.numNodes].radius); 
                         if(level.nodes[level.numNodes].timeout <= 0){level.nodes[level.numNodes].timeout = 10000;}
                         level.numNodes ++;
                 }
@@ -919,7 +921,7 @@ void G_PathLoad( void )
                 }
             }
         }
-        G_Printf( va("Loaded %d nodes\n", level.numNodes) );
+        G_Printf( va("Loaded %d waypoints\n", level.numNodes) );
 }
 
 /*

@@ -107,6 +107,7 @@ typedef struct
         int     random;
         int     timeout;
         int     action;
+        int     radius;
 } node;
 typedef struct
 {

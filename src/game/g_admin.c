@@ -7366,6 +7366,7 @@ void createNewNode(vec3_t pos) {
     level.nodes[level.numNodes].action = 0;
     level.nodes[level.numNodes].random = 0;
     VectorCopy(pos, level.nodes[level.numNodes].coord);
+    level.nodes[level.numNodes].radius = 70;
     level.numNodes++;
 }
 qboolean nodeIsFull(int nodeID) {
@@ -7419,6 +7420,76 @@ void disconnectNodes(int node1, int node2) {
         }
     }
 }
+//used to read preexisting PBot path files (or older CoW paths)
+void readPBotPaths(void) {
+    int i = 0;
+ 
+        fileHandle_t f;
+        int len;
+        char *path;
+        char line[ MAX_STRING_CHARS ];
+        char map[ MAX_QPATH ];
+
+        level.numNodes = 0;
+        trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
+        for(i = 0; i < MAX_NODES;i++)
+        {
+                level.nodes[i].coord[0] = 0;
+                level.nodes[i].coord[1] = 0;
+                level.nodes[i].coord[2] = 0;
+                level.nodes[i].nextid[0] = -1;
+                level.nodes[i].nextid[1] = -1;
+                level.nodes[i].nextid[2] = -1;
+                level.nodes[i].nextid[3] = -1;
+                level.nodes[i].nextid[4] = -1;
+                level.nodes[i].random = -1;
+                level.nodes[i].timeout = 10000;
+                level.nodes[i].action = 0;
+                level.nodes[i].radius = 70;
+        }
+        len = trap_FS_FOpenFile( va( "paths/%s/path.dat", map ), &f, FS_READ );
+        if( len < 0 )
+        {
+                G_Printf( "Found no path.dat for map\n" );
+                return;
+        }
+        path = G_Alloc( len + 1 );
+        trap_FS_Read( path, len, f );
+        *( path + len ) = '\0';
+        trap_FS_FCloseFile( f );
+        i = 0;
+        while( *path )
+        {
+                if( i >= sizeof( line ) - 1 )
+                {
+                        G_Printf( "Error loading path.dat for map\n" );
+                        return;
+                }
+                line[ i++ ] = *path;
+                line[ i ] = '\0';
+                if( *path == '\n' )
+                {
+                        i = 0; 
+                        if( level.numNodes >= MAX_NODES ){G_Printf( "Reached waypoint limit\n" );return;}
+                        sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d\n", 
+                                                &level.numNodes,
+                                                &level.nodes[level.numNodes].coord[0], 
+                                                &level.nodes[level.numNodes].coord[1], 
+                                                &level.nodes[level.numNodes].coord[2],
+                                                &level.nodes[level.numNodes].nextid[0],
+                                                &level.nodes[level.numNodes].nextid[1],
+                                                &level.nodes[level.numNodes].nextid[2],
+                                                &level.nodes[level.numNodes].nextid[3],
+                                                &level.nodes[level.numNodes].nextid[4],
+                                                &level.nodes[level.numNodes].random,
+                                                &level.nodes[level.numNodes].timeout,
+                                                &level.nodes[level.numNodes].action); 
+                        if(level.nodes[level.numNodes].timeout <= 0){level.nodes[level.numNodes].timeout = 10000;}
+                        level.numNodes ++;
+                }
+        path++;
+        }
+}
 qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     qboolean nodeNearby = qfalse;
     int closestNode = -1;
@@ -7428,6 +7499,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     int timeout;
     int tempID;
     int len; //length of file when saving waypoints
+    int radius;
     int maxConnectDist = 400; //the maximum distance the nodes can be apart to autoconnect them
     long closestDist[10] = {-1,-1,-1,-1,-1};
     int closestNodes[10];
@@ -7635,7 +7707,27 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             timeout = 100000;
         level.nodes[closestNode].timeout = timeout;
         ADMP(va("Node #%d timeout set to %d\n",closestNode,timeout));
+    } else if(!Q_stricmp(command, "radius")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        if(G_SayArgc() < 3 + skipArg) {
+            ADMP("^3!waypoint ^7Usage: !waypoint radius [radius in world units]\n");
+            return qfalse;
+        }
+        G_SayArgv(2 + skipArg, argument, sizeof(argument));
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        radius = atoi(argument);
+        if(radius <= 0)
+            radius = 70;
+        if(radius > 300)
+            radius = 70;
+        ADMP(va("Node #%d radius set to %d\n",closestNode,radius));
     } else if(!Q_stricmp(command, "migrate")) {
+        readPBotPaths();
         if(level.numNodes == 0) {
             ADMP("This command is used to migrate PBot path files to the waypoints used by CoWBot\nIt seems you dont have any PBot paths for this map so this is useless for you\n");
             return qfalse;
@@ -7662,7 +7754,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             }
             //now we reorder the connection ids so empty connections come last
             for(n=0;n<MAX_PATH_NODES;n++) {
-                //we found and empty connection
+                //we found an empty connection
                 if(level.nodes[i].nextid[n] == -1) {
                     //move it to the back
                     for(k=n;k<MAX_PATH_NODES - 1;k++) {
@@ -7673,7 +7765,26 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
                 }
             }
         }
+        //add a dumb radius to the nodes (same as the radius PBot had hardcoded)
+        for(n=0;n<level.numNodes;n++) {
+            level.nodes[n].radius = 70;
+        }
         ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
+    } else if(!Q_stricmp(command, "autoradius")) {
+        minDistance = -1;
+        //90 traces per node!!!
+        for(i=0;i<level.numNodes;i++) {
+            for(n=0;n<=90;n++) {
+                VectorSet(tempVec,level.nodes[i].coord[0] + cos(DEG2RAD(n * 3)) * 300,level.nodes[i].coord[1] + sin(DEG2RAD(n * 3)) * 300,level.nodes[i].coord[2]);
+                trap_Trace(&trace, level.nodes[i].coord,NULL,NULL,tempVec,ent->s.number,MASK_DEADSOLID);
+                if(DistanceSquared(level.nodes[i].coord, trace.endpos) < minDistance || minDistance == -1)
+                    minDistance = DistanceSquared(level.nodes[i].coord,trace.endpos);
+            }
+            if(minDistance < Square(70))
+                minDistance = Square(70);
+            level.nodes[i].radius = sqrt(minDistance);
+        }
+        ADMP("The radii of the nodes have been automatically set. Please test the waypoints before saving");
     } else if(!Q_stricmp(command, "autoconnect")) {
         for(i=0;i<level.numNodes;i++) {
             for(k=0;k<10;k++)
@@ -7709,14 +7820,14 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
         }
         ADMP("Nodes have been automatically connected\nPlease review and make changes before saving\n");
     } else if(!Q_stricmp(command, "save")) {
-        Com_sprintf( fileName, sizeof( fileName ), "paths/%s/path.dat", map );
+        Com_sprintf( fileName, sizeof( fileName ), "waypoints/%s/waypoint.dat", map );
         
         len = trap_FS_FOpenFile( fileName, &f, FS_WRITE );
         if( len < 0 ) {
             ADMP("Couldn't Open File.  Created a New file\n" );
         }
         for( i = 0; i < level.numNodes; i++ ) {
-            s = va( "%d %f %f %f %d %d %d %d %d %d %d %d\n",
+            s = va( "%d %f %f %f %d %d %d %d %d %d %d %d %d\n",
             i,
             level.nodes[i].coord[0],
             level.nodes[i].coord[1],
@@ -7728,14 +7839,16 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             level.nodes[i].nextid[4],
             level.nodes[i].random,
             level.nodes[i].timeout,
-            level.nodes[i].action);
+            level.nodes[i].action,
+            level.nodes[i].radius
+            );
             trap_FS_Write( s, strlen( s ), f );
         }
         trap_FS_FCloseFile( f );
         ADMP("Saved Waypoints\n" );
     } else {
         if(nodeNearby) {
-            ADMP(va("Nearby Node: #%d Coord: %f %f %f Connections: %d %d %d %d %d Action: %d Timeout: %d Random: %d\n", closestNode, 
+            ADMP(va("Nearby Node: #%d Coord: %f %f %f Connections: %d %d %d %d %d Action: %d Timeout: %d Random: %d Radius: %d\n", closestNode, 
                     level.nodes[closestNode].coord[0], 
                     level.nodes[closestNode].coord[1], 
                     level.nodes[closestNode].coord[2], 
@@ -7746,7 +7859,9 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
                     level.nodes[closestNode].nextid[4],
                     level.nodes[closestNode].action,
                     level.nodes[closestNode].timeout,
-                    level.nodes[closestNode].random));
+                    level.nodes[closestNode].random,
+                    level.nodes[closestNode].radius
+                   ));
             return qtrue;
         }
         ADMP("^3!waypoint ^7usage: !waypoint [add/del/connect/disconnect/move/action/cancel/timeout/save/migrate]\n");

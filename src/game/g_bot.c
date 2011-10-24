@@ -507,7 +507,7 @@ void G_BotMoveDirectlyToGoal( gentity_t *self, usercmd_t *botCmdBuffer ) {
             findRouteToTarget(self, self->botMind->goal);
             setNewRoute(self);
         }
-        if(distanceToTargetNode(self) < 70)
+        if(distanceToTargetNode(self) < level.nodes[self->botMind->targetNodeID].radius)
         {
             self->botMind->lastNodeID = self->botMind->targetNodeID;
             self->botMind->targetNodeID = self->botMind->routeToTarget[self->botMind->targetNodeID];
