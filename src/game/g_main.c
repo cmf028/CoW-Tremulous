@@ -858,10 +858,11 @@ void G_PathLoad( void )
                 level.nodes[i].nextid[2] = -1;
                 level.nodes[i].nextid[3] = -1;
                 level.nodes[i].nextid[4] = -1;
-                level.nodes[i].random = -1;
                 level.nodes[i].timeout = 10000;
                 level.nodes[i].action = 0;
                 level.nodes[i].radius = 70;
+                for(k=PCL_NONE;k<PCL_NUM_CLASSES;k++)
+                    level.nodes[i].pclass[k] = qtrue;
         }
         len = trap_FS_FOpenFile( va( "waypoints/%s/waypoint.dat", map ), &f, FS_READ );
         if( len < 0 )
@@ -887,7 +888,7 @@ void G_PathLoad( void )
                 {
                         i = 0; 
                         if( level.numNodes >= MAX_NODES ){G_Printf( "Reached waypoint limit\n" );return;}
-                        sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d %d\n", 
+                        sscanf( line, "%d %f %f %f %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", 
                                                 &level.numNodes,
                                                 &level.nodes[level.numNodes].coord[0], 
                                                 &level.nodes[level.numNodes].coord[1], 
@@ -897,10 +898,23 @@ void G_PathLoad( void )
                                                 &level.nodes[level.numNodes].nextid[2],
                                                 &level.nodes[level.numNodes].nextid[3],
                                                 &level.nodes[level.numNodes].nextid[4],
-                                                &level.nodes[level.numNodes].random,
                                                 &level.nodes[level.numNodes].timeout,
                                                 &level.nodes[level.numNodes].action,
-                                                &level.nodes[level.numNodes].radius); 
+                                                &level.nodes[level.numNodes].radius,
+                                                &level.nodes[level.numNodes].pclass[0],
+                                                &level.nodes[level.numNodes].pclass[1],
+                                                &level.nodes[level.numNodes].pclass[2],
+                                                &level.nodes[level.numNodes].pclass[3],
+                                                &level.nodes[level.numNodes].pclass[4],
+                                                &level.nodes[level.numNodes].pclass[5],
+                                                &level.nodes[level.numNodes].pclass[6],
+                                                &level.nodes[level.numNodes].pclass[7],
+                                                &level.nodes[level.numNodes].pclass[8],
+                                                &level.nodes[level.numNodes].pclass[9],
+                                                &level.nodes[level.numNodes].pclass[10],
+                                                &level.nodes[level.numNodes].pclass[11],
+                                                &level.nodes[level.numNodes].pclass[12]
+                              ); 
                         if(level.nodes[level.numNodes].timeout <= 0){level.nodes[level.numNodes].timeout = 10000;}
                         level.numNodes ++;
                 }

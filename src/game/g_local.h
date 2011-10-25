@@ -108,6 +108,7 @@ typedef struct
         int     timeout;
         int     action;
         int     radius;
+        int     pclass[PCL_NUM_CLASSES];
 } node;
 typedef struct
 {

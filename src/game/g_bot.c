@@ -401,7 +401,7 @@ void G_BotModusManager( gentity_t *self ) {
                     self->botMind->needsNewGoal = qfalse;
                 }
             } else if(g_bot_roam.integer > 0){
-                if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal ) {
+                if(targetIsEntity(self->botMind->goal) || self->botMind->needsNewGoal || !level.nodes[self->botMind->endNodeID].pclass[self->client->ps.stats[STAT_PCLASS]]) {
                     setGoalCoordinate(self, level.nodes[rand() % level.numNodes].coord);
                     self->botMind->needsNewGoal = qfalse;
                 }
@@ -1737,7 +1737,7 @@ void findRouteToTarget( gentity_t *self, botTarget_t target ) {
         
         for (i = 0; i < MAX_PATH_NODES; ++i) {
             childNode = level.nodes[bestNode].nextid[i];
-            if (childNode != -1 && childNode < 1000 ) {
+            if (childNode != -1 && level.nodes[childNode].pclass[self->client->ps.stats[STAT_PCLASS]]) {
                 if (shortDist[bestNode] + level.distNode[bestNode][childNode] < shortDist[childNode]) {
                     shortDist[childNode] = shortDist[bestNode] + level.distNode[bestNode][childNode];
                     self->botMind->routeToTarget[childNode] = bestNode;

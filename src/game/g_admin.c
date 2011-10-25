@@ -375,7 +375,7 @@ g_admin_cmd_t g_admin_cmds[ ] =
     {
         "waypoint", G_admin_waypoint, "L",
         "Modify the nodes used by bots",
-        "[add/del/connect/disconnect/move/action/cancel/timeout/save]"
+        "[add/del/connect/disconnect/move/action/cancel/timeout/class/radius/save/migrate]"
     }
   };
 
@@ -7367,6 +7367,9 @@ void createNewNode(vec3_t pos) {
     level.nodes[level.numNodes].random = 0;
     VectorCopy(pos, level.nodes[level.numNodes].coord);
     level.nodes[level.numNodes].radius = 70;
+    for(i=PCL_NONE;i<PCL_NUM_CLASSES;i++) {
+        level.nodes[level.numNodes].pclass[i] = qtrue;
+    }
     level.numNodes++;
 }
 qboolean nodeIsFull(int nodeID) {
@@ -7490,6 +7493,14 @@ void readPBotPaths(void) {
         path++;
         }
 }
+qboolean allClassesCanUse(int nodeID) {
+    int i;
+    for(i=0;i<PCL_NUM_CLASSES;i++) {
+        if(!level.nodes[nodeID].pclass[i])
+            return qfalse;
+    }
+    return qtrue;
+}
 qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     qboolean nodeNearby = qfalse;
     int closestNode = -1;
@@ -7506,6 +7517,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
     char *s;
     char command[MAX_STRING_CHARS];
     char argument[MAX_STRING_CHARS];
+    char waypointStr[MAX_STRING_CHARS];
     char map[MAX_QPATH];
     char fileName[ MAX_OSPATH ];
     fileHandle_t f;
@@ -7707,6 +7719,40 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             timeout = 100000;
         level.nodes[closestNode].timeout = timeout;
         ADMP(va("Node #%d timeout set to %d\n",closestNode,timeout));
+    } else if(!Q_stricmp(command, "class")) {
+        ent->pathid = -1;
+        ent->movepathid = -1;
+        ent->discpathid = -1;
+        if(G_SayArgc() < 3 + skipArg) {
+            ADMP("^3!waypoint ^7Usage: !waypoint class [builder/builderupg/level0/level1/level1upg/level2/level2upg/level3/level3upg/level4/human_base/human_bsuit/all/none]\n");
+            return qfalse;
+        }
+        G_SayArgv(2 + skipArg, argument, sizeof(argument));
+        if(!nodeNearby) {
+            ADMP("No nearby nodes\n");
+            return qfalse;
+        }
+        if(!Q_stricmp(argument, "all")) {
+            for(i=PCL_NONE + 1;i<PCL_NUM_CLASSES;i++)
+                level.nodes[closestNode].pclass[i] = qtrue;
+            ADMP(va("All classes can now use Node %d",closestNode));
+        } else if(!Q_stricmp(argument, "none")) {
+            for(i=PCL_NONE + 1;i<PCL_NUM_CLASSES;i++)
+                level.nodes[closestNode].pclass[i] = qfalse;
+            ADMP(va("No classes can use Node %d",closestNode));
+        } else if(!Q_stricmp(argument, "builder") || !Q_stricmp(argument, "builderupg") || !Q_stricmp(argument, "level0") 
+            || !Q_stricmp(argument, "level1") || !Q_stricmp(argument, "level1upg") || !Q_stricmp(argument, "level2") ||
+            !Q_stricmp(argument, "level2upg") || !Q_stricmp(argument, "level3") || !Q_stricmp(argument, "level3upg") ||
+            !Q_stricmp(argument, "level4") || !Q_stricmp(argument, "human_base") || !Q_stricmp(argument,"human_bsuit")) {
+            Q_strncpyz(argument, Q_strlwr(argument),sizeof(argument));
+            level.nodes[closestNode].pclass[BG_FindClassNumForName(argument)] = qtrue;
+            ADMP(va("Class %s can now use Node %d",argument,closestNode));
+        } else {
+            ADMP("^3!waypoint ^7Usage: !waypoint class [builder/builderupg/level0/level1/level1upg/level2/level2upg/level3/level3upg/level4/human_base/human_bsuit/all/none]\n");
+            return qfalse;
+        }
+        
+        
     } else if(!Q_stricmp(command, "radius")) {
         ent->pathid = -1;
         ent->movepathid = -1;
@@ -7725,6 +7771,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             radius = 70;
         if(radius > 300)
             radius = 70;
+        level.nodes[closestNode].radius = radius;
         ADMP(va("Node #%d radius set to %d\n",closestNode,radius));
     } else if(!Q_stricmp(command, "migrate")) {
         readPBotPaths();
@@ -7766,25 +7813,15 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             }
         }
         //add a dumb radius to the nodes (same as the radius PBot had hardcoded)
+        //also add all classes to nodes
         for(n=0;n<level.numNodes;n++) {
             level.nodes[n].radius = 70;
-        }
-        ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
-    } else if(!Q_stricmp(command, "autoradius")) {
-        minDistance = -1;
-        //90 traces per node!!!
-        for(i=0;i<level.numNodes;i++) {
-            for(n=0;n<=90;n++) {
-                VectorSet(tempVec,level.nodes[i].coord[0] + cos(DEG2RAD(n * 3)) * 300,level.nodes[i].coord[1] + sin(DEG2RAD(n * 3)) * 300,level.nodes[i].coord[2]);
-                trap_Trace(&trace, level.nodes[i].coord,NULL,NULL,tempVec,ent->s.number,MASK_DEADSOLID);
-                if(DistanceSquared(level.nodes[i].coord, trace.endpos) < minDistance || minDistance == -1)
-                    minDistance = DistanceSquared(level.nodes[i].coord,trace.endpos);
+            for(i=PCL_NONE;i<PCL_NUM_CLASSES;i++) {
+                level.nodes[n].pclass[i] = qtrue;
             }
-            if(minDistance < Square(70))
-                minDistance = Square(70);
-            level.nodes[i].radius = sqrt(minDistance);
         }
-        ADMP("The radii of the nodes have been automatically set. Please test the waypoints before saving");
+        
+        ADMP("Migration complete\nPlease inspect the waypoints and correct any issues before saving\n");
     } else if(!Q_stricmp(command, "autoconnect")) {
         for(i=0;i<level.numNodes;i++) {
             for(k=0;k<10;k++)
@@ -7827,7 +7864,7 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             ADMP("Couldn't Open File.  Created a New file\n" );
         }
         for( i = 0; i < level.numNodes; i++ ) {
-            s = va( "%d %f %f %f %d %d %d %d %d %d %d %d %d\n",
+            s = va( "%d %f %f %f %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
             i,
             level.nodes[i].coord[0],
             level.nodes[i].coord[1],
@@ -7837,10 +7874,22 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
             level.nodes[i].nextid[2],
             level.nodes[i].nextid[3],
             level.nodes[i].nextid[4],
-            level.nodes[i].random,
             level.nodes[i].timeout,
             level.nodes[i].action,
-            level.nodes[i].radius
+            level.nodes[i].radius,
+            level.nodes[i].pclass[0],
+            level.nodes[i].pclass[1],
+            level.nodes[i].pclass[2],
+            level.nodes[i].pclass[3],
+            level.nodes[i].pclass[4],
+            level.nodes[i].pclass[5],
+            level.nodes[i].pclass[6],
+            level.nodes[i].pclass[7],
+            level.nodes[i].pclass[8],
+            level.nodes[i].pclass[9],
+            level.nodes[i].pclass[10],
+            level.nodes[i].pclass[11],
+            level.nodes[i].pclass[12]
             );
             trap_FS_Write( s, strlen( s ), f );
         }
@@ -7848,23 +7897,48 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
         ADMP("Saved Waypoints\n" );
     } else {
         if(nodeNearby) {
-            ADMP(va("Nearby Node: #%d Coord: %f %f %f Connections: %d %d %d %d %d Action: %d Timeout: %d Random: %d Radius: %d\n", closestNode, 
-                    level.nodes[closestNode].coord[0], 
-                    level.nodes[closestNode].coord[1], 
-                    level.nodes[closestNode].coord[2], 
-                    level.nodes[closestNode].nextid[0], 
-                    level.nodes[closestNode].nextid[1], 
-                    level.nodes[closestNode].nextid[2],
-                    level.nodes[closestNode].nextid[3],
-                    level.nodes[closestNode].nextid[4],
-                    level.nodes[closestNode].action,
-                    level.nodes[closestNode].timeout,
-                    level.nodes[closestNode].random,
-                    level.nodes[closestNode].radius
-                   ));
+            //make the string manually to not show unnecessary info
+            Q_strncpyz(waypointStr,va("Nearby Node: #%d Coord: %f %f %f Connections: ",
+                                      closestNode,
+                                      level.nodes[closestNode].coord[0],
+                                      level.nodes[closestNode].coord[1],
+                                      level.nodes[closestNode].coord[2])
+                                        , sizeof(waypointStr));
+            //add node connection information
+            for(i=0;i<MAX_PATH_NODES;i++) {
+                if(level.nodes[closestNode].nextid[i] != -1)
+                    Q_strcat(waypointStr, sizeof(waypointStr), va("%d ",level.nodes[closestNode].nextid[i]));
+            }
+            if(level.nodes[closestNode].nextid[0] == -1)
+                Q_strcat(waypointStr,sizeof(waypointStr),"None ");
+            //add action
+            Q_strcat(waypointStr, sizeof(waypointStr),va("Action: %d",level.nodes[closestNode].action));
+            
+            //add timeout
+            Q_strcat(waypointStr, sizeof(waypointStr), va(" Timeout: %d",level.nodes[closestNode].timeout));
+            
+            //add radius
+            Q_strcat(waypointStr, sizeof(waypointStr), va(" Radius: %d",level.nodes[closestNode].radius));
+            
+            //add classes
+            Q_strcat(waypointStr, sizeof(waypointStr),"\nClasses: ");
+            if(allClassesCanUse(closestNode))
+                Q_strcat(waypointStr, sizeof(waypointStr), "all");
+            else {
+                n=0;
+                for(i=PCL_NONE+1;i<PCL_NUM_CLASSES;i++) {
+                    if(level.nodes[closestNode].pclass[i])
+                        Q_strcat(waypointStr, sizeof(waypointStr), va("%s ",BG_FindNameForClassNum(i)));
+                    else
+                        n++;
+                }
+                if(n==i)
+                    Q_strcat(waypointStr, sizeof(waypointStr), "none");
+            }
+            ADMP(waypointStr);
             return qtrue;
         }
-        ADMP("^3!waypoint ^7usage: !waypoint [add/del/connect/disconnect/move/action/cancel/timeout/save/migrate]\n");
+        ADMP("^3!waypoint ^7usage: !waypoint [add/del/connect/disconnect/move/action/cancel/timeout/class/radius/save/migrate]\n");
         return qfalse;
     }
     return qtrue;
