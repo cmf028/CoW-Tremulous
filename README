@@ -12,7 +12,7 @@ Bot Specific Features:
 !botcmd changes the bots behavior
 !bot adds bots with a specified skill level
 !drawnodes shows the waypoints
-/node allows the making of waypoints for the bots
+!waypoint allows the making of waypoints for the bots
 
 Bots can:
 Go to a medistat to heal
@@ -23,3 +23,78 @@ Wallcrawl
 Use waypoints to navigate the map and go to a location without getting stuck
 Effectively dodge.
 Will not keep human players from spawning
+
+PBot paths are compatible, but you must use "!waypoint migrate" first
+
+Overview of bot admin commands:
+!bot [add/del] [botname] [team] [skilllevel]
+Used to add/delete a bot
+skilllevel is a number from 1-10
+10 == aimbot
+5 == default
+
+!botcmd [botname] [attack/repair/auto/idle]
+Used to control bot behavior
+attack means humans wont repair buildings
+repair means humans will ONLY repair buildings
+auto is the default, it allows all bot functions
+idle makes the bots stand there and do nothing
+
+!botset [class] [attribute] [enable/disable]
+Allows controling of bot capabilities/cvars
+Available arguments:
+Class:      Attribute:     Explanation:
+buy	    	           allows/disallows the bot to buy a weapon
+	    rifle
+	    psaw
+	    shotgun
+	    las
+	    flamer
+	    pulse
+	    luci
+	    chain
+	    massd
+	    all
+evolve			   allows/disallows the bot to evolve to a class
+	    basi
+	    advbasi
+	    mara
+	    advmara
+	    goon
+	    advgoon
+	    tyrant
+	    all
+bot 			   controls misc bot capabilities
+	    roam -- determines if bots will "roam" the map
+	    attackstruct
+	    infinitefunds
+
+!botcfg [load/save] [cfgname]
+Allows the loading/saving of bot configs (settings by the !botset command)
+Bot configs are loaded/saved from the "bot" subdirectory in your base folder
+
+!waypoint [add/del/connect/disconnect/timeout/radius/class/action/autoconnect/migrate/save/cancel] [arg2]
+Allows the making/editing of waypoints for the bots
+add -- adds a new waypoint at the current location
+del -- deletes the waypoint you are close to
+connect -- use once to select a waypoint, use again on another waypoint to connect the two
+disconnect -- use once to select a waypoint, use again on another waypoint to disconnect the two
+timeout -- change the timeout value of a waypoint, default: 10000. Timeout is the maximum amount of time a bot will try to get to a waypoint before rerouting (used in case bot goes off path)
+radius -- change the radius of a waypoint. The radius is how close the bot has to get to the waypoint before starting to head to the next one
+class -- change the classes that can use a waypoint. Default: all 
+action -- add an action to a waypoint, the bot will then perform that action when he gets there
+autoconnect -- attempt to automatically connect waypoints EXPERIMENTAL
+migrate -- migrate over PBot path files or older CoWBot waypoints so they can be used by CoWBot
+save -- save the waypoints for the map
+cancel -- cancel the last action
+
+When !waypoint is used without any arguments, it displays the current attributes of the waypoint you are closest to.
+
+Maximum number of waypoints: 500
+
+!drawnodes
+Shows the waypoints, and their connections, on the map
+WARNING: may crash the game (too many entities)
+Make sure you give the game some time between turning the nodes off/on to help prevent this
+
+
