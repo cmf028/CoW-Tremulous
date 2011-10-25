@@ -1636,7 +1636,8 @@ int findClosestNode( botTarget_t startTarget) {
         //note that they are sorted by distance in the array
         for(i = 0; i < 10; i++) {
             trap_Trace(&trace, start, NULL, NULL, level.nodes[closestNodes[i]].coord, getTargetEntityNumber(startTarget), MASK_DEADSOLID);
-            if( trace.fraction == 1.0f && closestNodes[i] != -1 && level.nodes[closestNodes[i]].pclass[self->client->ps.stats[STAT_PCLASS]]) {
+            if( trace.fraction == 1.0f && closestNodes[i] != -1 && 
+                (( targetIsEntity(startTarget) && startTarget.ent->client && level.nodes[closestNodes[i]].pclass[startTarget.ent->client->ps.stats[STAT_PCLASS]]) || (!targetIsEntity(startTarget) || !startTarget.ent->client))){
                 closestNodes[n] = closestNodes[i];
                 n++;
             }
