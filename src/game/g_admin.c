@@ -7735,18 +7735,18 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
         if(!Q_stricmp(argument, "all")) {
             for(i=PCL_NONE + 1;i<PCL_NUM_CLASSES;i++)
                 level.nodes[closestNode].pclass[i] = qtrue;
-            ADMP(va("All classes can now use Node %d",closestNode));
+            ADMP(va("All classes can now use Node %d\n",closestNode));
         } else if(!Q_stricmp(argument, "none")) {
             for(i=PCL_NONE + 1;i<PCL_NUM_CLASSES;i++)
                 level.nodes[closestNode].pclass[i] = qfalse;
-            ADMP(va("No classes can use Node %d",closestNode));
+            ADMP(va("No classes can use Node %d\n",closestNode));
         } else if(!Q_stricmp(argument, "builder") || !Q_stricmp(argument, "builderupg") || !Q_stricmp(argument, "level0") 
             || !Q_stricmp(argument, "level1") || !Q_stricmp(argument, "level1upg") || !Q_stricmp(argument, "level2") ||
             !Q_stricmp(argument, "level2upg") || !Q_stricmp(argument, "level3") || !Q_stricmp(argument, "level3upg") ||
             !Q_stricmp(argument, "level4") || !Q_stricmp(argument, "human_base") || !Q_stricmp(argument,"human_bsuit")) {
             Q_strncpyz(argument, Q_strlwr(argument),sizeof(argument));
             level.nodes[closestNode].pclass[BG_FindClassNumForName(argument)] = qtrue;
-            ADMP(va("Class %s can now use Node %d",argument,closestNode));
+            ADMP(va("Class %s can now use Node %d\n",argument,closestNode));
         } else {
             ADMP("^3!waypoint ^7Usage: !waypoint class [builder/builderupg/level0/level1/level1upg/level2/level2upg/level3/level3upg/level4/human_base/human_bsuit/all/none]\n");
             return qfalse;
@@ -7935,6 +7935,8 @@ qboolean G_admin_waypoint(gentity_t *ent, int skipArg) {
                 if(n==i)
                     Q_strcat(waypointStr, sizeof(waypointStr), "none");
             }
+            //add linebreak
+            Q_strcat(waypointStr, sizeof(waypointStr), "\n");
             ADMP(waypointStr);
             return qtrue;
         }
